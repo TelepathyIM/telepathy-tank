@@ -1,5 +1,5 @@
 /*
-    This file is part of the telepathy-link connection manager.
+    This file is part of the telepathy-tank connection manager.
     Copyright (C) 2018 Alexandr Akulich <akulichalexander@gmail.com>
 
     This program is free software; you can redistribute it and/or
@@ -31,7 +31,7 @@ void debugViaDBusInterface(QtMsgType type, const QMessageLogContext &context, co
         QByteArray fileName = QByteArray::fromRawData(context.file, qstrlen(context.file));
 
         static const char *namesToWrap[] = {
-            "link",
+            "tank",
             "telepathy-qt"
         };
 

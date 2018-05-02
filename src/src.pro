@@ -1,7 +1,7 @@
 QT = core network dbus
 
 TEMPLATE = app
-TARGET   = telepathy-morse
+TARGET   = telepathy-tank
 VERSION = 0.2.0
 
 CONFIG += c++11
@@ -24,7 +24,7 @@ HEADERS = \
     textchannel.hpp
 
 OTHER_FILES += CMakeLists.txt
-OTHER_FILES += rpm/telepathy-morse.spec
+OTHER_FILES += rpm/telepathy-tank.spec
 
 # Installation directories
 isEmpty(INSTALL_PREFIX) {
@@ -46,13 +46,13 @@ isEmpty(INSTALL_DATA_DIR) {
 # Configure the dbus service file
 DBUS_SERVICE_FILE_TEMPLATE = $$cat($$PWD/dbus-service.in, blob)
 DBUS_SERVICE_FILE_CONTENT = $$replace(SERVICE_FILE_TEMPLATE, @CMAKE_INSTALL_FULL_LIBEXECDIR@, $$target.path)
-DBUS_SERVICE_FILE_NAME = $$OUT_PWD/org.freedesktop.Telepathy.ConnectionManager.morse.service
+DBUS_SERVICE_FILE_NAME = $$OUT_PWD/org.freedesktop.Telepathy.ConnectionManager.tank.service
 write_file($$DBUS_SERVICE_FILE_NAME, DBUS_SERVICE_FILE_CONTENT)
 
 # Installation
 target.path = $$INSTALL_LIBEXEC_DIR
 
-telepathy_manager.files = morse.manager
+telepathy_manager.files = tank.manager
 telepathy_manager.path = $$INSTALL_DATA_DIR/telepathy/managers
 
 dbus_services.files = $$DBUS_SERVICE_FILE_NAME

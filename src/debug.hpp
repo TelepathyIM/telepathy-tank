@@ -1,5 +1,5 @@
 /*
-    This file is part of the telepathy-morse connection manager.
+    This file is part of the telepathy-tank connection manager.
     Copyright (C) 2018 Alexandr Akulich <akulichalexander@gmail.com>
 
     This program is free software; you can redistribute it and/or

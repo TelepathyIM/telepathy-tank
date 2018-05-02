@@ -9,6 +9,10 @@ set(tank_SOURCES
     messageschannel.hpp
 )
 
+if (NOT DEFINED QT_VERSION_MAJOR)
+    set(QT_VERSION_MAJOR 5)
+endif()
+
 add_executable(telepathy-tank ${tank_SOURCES})
 
 target_compile_options(telepathy-tank PRIVATE -Werror)
