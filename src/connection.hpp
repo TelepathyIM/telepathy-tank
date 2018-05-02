@@ -100,6 +100,9 @@ public:
     Tp::ContactInfoFieldList getUserInfo(const quint32 userId) const;
     Tp::ContactInfoMap getContactInfo(const Tp::UIntList &contacts, Tp::DBusError *error);
 
+    Tp::AliasMap getAliases(const Tp::UIntList &handles, Tp::DBusError *error = 0);
+    QString getContactAlias(uint handle) const;
+
     Tp::SimplePresence getPresence(uint handle);
     uint setPresence(const QString &status, const QString &message, Tp::DBusError *error);
 

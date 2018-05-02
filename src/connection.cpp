@@ -125,12 +125,18 @@ MatrixConnection::MatrixConnection(const QDBusConnection &dbusConnection, const 
     contactsIface->setGetContactAttributesCallback(Tp::memFun(this, &MatrixConnection::getContactAttributes));
     contactsIface->setContactAttributeInterfaces({
                                                      TP_QT_IFACE_CONNECTION,
+                                                     TP_QT_IFACE_CONNECTION_INTERFACE_ALIASING,
                                                      TP_QT_IFACE_CONNECTION_INTERFACE_CONTACT_GROUPS,
                                                      TP_QT_IFACE_CONNECTION_INTERFACE_CONTACT_LIST,
                                                      TP_QT_IFACE_CONNECTION_INTERFACE_SIMPLE_PRESENCE,
                                                      TP_QT_IFACE_CONNECTION_INTERFACE_AVATARS,
                                                  });
     plugInterface(Tp::AbstractConnectionInterfacePtr::dynamicCast(contactsIface));
+
+    /* Connection.Interface.Aliasing */
+    m_aliasingIface = Tp::BaseConnectionAliasingInterface::create();
+    m_aliasingIface->setGetAliasesCallback(Tp::memFun(this, &MatrixConnection::getAliases));
+    plugInterface(Tp::AbstractConnectionInterfacePtr::dynamicCast(m_aliasingIface));
 
     /* Connection.Interface.SimplePresence */
     m_simplePresenceIface = Tp::BaseConnectionSimplePresenceInterface::create();
@@ -435,6 +441,10 @@ Tp::ContactAttributesMap MatrixConnection::getContactAttributes(const Tp::UIntLi
             attributes[TP_QT_IFACE_CONNECTION_INTERFACE_SIMPLE_PRESENCE + QLatin1String("/presence")]
                     = QVariant::fromValue(mkSimplePresence(MatrixPresence::Online));
         }
+        if (interfaces.contains(TP_QT_IFACE_CONNECTION_INTERFACE_ALIASING)) {
+            attributes[TP_QT_IFACE_CONNECTION_INTERFACE_ALIASING + QLatin1String("/alias")]
+                    = QVariant::fromValue(getContactAlias(handle));
+        }
         if (handle == selfHandle()) {
             continue;
         }
@@ -454,6 +464,25 @@ Tp::ContactAttributesMap MatrixConnection::getContactAttributes(const Tp::UIntLi
 
 void MatrixConnection::requestSubscription(const Tp::UIntList &handles, const QString &message, Tp::DBusError *error)
 {
+}
+
+Tp::AliasMap MatrixConnection::getAliases(const Tp::UIntList &contacts, Tp::DBusError *error)
+{
+    qDebug() << Q_FUNC_INFO << contacts;
+    Tp::AliasMap aliases;
+    for (uint handle : contacts) {
+        aliases[handle] = getContactAlias(handle);
+    }
+    return aliases;
+}
+
+QString MatrixConnection::getContactAlias(uint handle) const
+{
+    const QMatrixClient::User *user = getUser(handle);
+    if (!user) {
+        return QString();
+    }
+    return user->displayname();
 }
 
 Tp::SimplePresence MatrixConnection::getPresence(uint handle)
