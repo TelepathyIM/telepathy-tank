@@ -13,7 +13,7 @@ param-proxy-username=s
 param-proxy-password=s
 default-keepalive-interval=15
 
-EnglishName=Telegram
+EnglishName=Matrix
 RequestableChannelClasses=text-1on1;text-multi;roomlist;
 Interfaces=org.freedesktop.Telepathy.Protocol.Interface.Presence;org.freedesktop.Telepathy.Protocol.Interface.Addressing;
 ConnectionInterfaces=org.freedesktop.Telepathy.Connection.Interface.Requests;org.freedesktop.Telepathy.Connection.Interface.Contacts;org.freedesktop.Telepathy.Connection.Interface.Aliasing;org.freedesktop.Telepathy.Connection.Interface.SimplePresence;org.freedesktop.Telepathy.Connection.Interface.Avatars;org.freedesktop.Telepathy.Connection.Interface.ContactList;
