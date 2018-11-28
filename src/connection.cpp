@@ -41,7 +41,7 @@
 #include <room.h>
 #include <settings.h>
 #include <user.h>
-#include <jobs/sendeventjob.h>
+#include <events/roommemberevent.h>
 
 #define Q_MATRIX_CLIENT_MAJOR_VERSION 0
 #define Q_MATRIX_CLIENT_MINOR_VERSION 1
@@ -682,11 +682,10 @@ void MatrixConnection::prefetchRoomHistory(QMatrixClient::Room *room, Tp::Handle
         return;
     }
     for (auto eventIt = room->messageEvents().begin(); eventIt < room->messageEvents().end(); ++eventIt) {
-        auto *event = eventIt->event();
-        if (event->type() == QMatrixClient::EventType::RoomMessage) {
-            auto *e = static_cast<const QMatrixClient::RoomMessageEvent*>(event);
+        auto *event = eventIt->viewAs<QMatrixClient::RoomMessageEvent>();
+        if (event) {
 //                qDebug() << e->plainBody();
-            textChannel->processMessageEvent(e);
+            textChannel->processMessageEvent(event);
         }
     }
 }

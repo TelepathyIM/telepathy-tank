@@ -31,7 +31,7 @@
 #include <room.h>
 #include <settings.h>
 #include <user.h>
-#include <jobs/sendeventjob.h>
+#include <events/roommemberevent.h>
 
 MatrixMessagesChannel::MatrixMessagesChannel(MatrixConnection *connection, Tp::BaseChannel *baseChannel)
     : Tp::BaseChannelTextType(baseChannel),
