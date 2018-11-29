@@ -34,8 +34,6 @@ target_link_libraries(telepathy-tank
     telepathy-qt${QT_VERSION_MAJOR}
     telepathy-qt${QT_VERSION_MAJOR}-service
     QMatrixClient
-    -lcrypto
-    -lz
 )
 
 configure_file(dbus-service.in org.freedesktop.Telepathy.ConnectionManager.tank.service)
