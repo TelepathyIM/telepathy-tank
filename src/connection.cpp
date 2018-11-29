@@ -165,9 +165,11 @@ MatrixConnection::MatrixConnection(const QDBusConnection &dbusConnection, const 
     m_contactListIface->setRequestSubscriptionCallback(Tp::memFun(this, &MatrixConnection::requestSubscription));
     plugInterface(Tp::AbstractConnectionInterfacePtr::dynamicCast(m_contactListIface));
 
+#if TP_QT_VERSION >= TP_QT_VERSION_CHECK(0, 9, 8)
     /* Connection.Interface.ContactGroups */
     Tp::BaseConnectionContactGroupsInterfacePtr groupsIface = Tp::BaseConnectionContactGroupsInterface::create();
     plugInterface(Tp::AbstractConnectionInterfacePtr::dynamicCast(groupsIface));
+#endif
 
     /* Connection.Interface.Requests */
     m_requestsIface = Tp::BaseConnectionRequestsInterface::create(this);
