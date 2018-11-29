@@ -165,8 +165,68 @@ void MatrixMessagesChannel::processMessageEvent(const QMatrixClient::RoomMessage
     Tp::MessagePartList body;
     Tp::MessagePart text;
 
-    text[QStringLiteral("content-type")] = QDBusVariant(QStringLiteral("text/plain"));
-    text[QStringLiteral("content")]      = QDBusVariant(event->plainBody());
+    const QJsonObject content = event->originalJsonObject().value(QLatin1String("content")).toObject();
+    const QString format = content.value(QLatin1String("format")).toString();
+    if (format == QLatin1String("org.matrix.custom.html")) {
+        static const QRegularExpression replyPattern("^.{0,3}<a href=\"(?<url>.*)\">Reply to (?<replyTo>.*)</a>:.{0,4}"
+                                                     "<br.{0,2}><blockquote>(?<quote>.*)</blockquote>"
+                                                     "<p>(?<message>.*)</p>");
+        static const bool optimize = [](std::initializer_list<const QRegularExpression *> expressions) {
+            for (const QRegularExpression *expr : expressions) {
+                expr->optimize();
+            }
+            return true;
+        }({&replyPattern});
+        Q_UNUSED(optimize)
+
+        /* Typical formatted_body looks like this:
+         * "<i>
+         * <a href=\"https://matrix.to/#/!aUBwzaVnlGSXhlADmf:gazizova.net/$152529106016730XcGge:t2bot.io\">Reply to username</a>:
+         * </i>
+         * <br />
+         * <blockquote>The original message text</blockquote>
+         * <p>This message text</p>" */
+
+        const QString formatted = content.value(QLatin1String("formatted_body")).toString();
+        const QRegularExpressionMatch match = replyPattern.match(formatted);
+        qDebug().noquote() << "treat" << formatted << "against" << replyPattern.pattern() << match.isValid();
+        if (match.isValid()) {
+            const QString url = match.captured("url");
+            // const QString replyTo = match.capturedRef("replyTo");
+            // const QString quote = match.captured("quote");
+            // const QString message = match.captured("message");
+            const int thisRoomIndex = url.indexOf(m_targetId);
+            qDebug() << "URL:" << url << thisRoomIndex << "this room: " << thisRoomIndex;
+            if (thisRoomIndex > 0) {
+                const QString replyMessageToken = url.mid(m_targetId.length() + thisRoomIndex + 1);
+                header[QStringLiteral("reply-to-message-token")] = QDBusVariant(replyMessageToken);
+            }
+            // This is not going to work as-is because of bug in TelepathyQt
+            // Tp::MessagePart replyInterfaceText;
+            // replyInterfaceText[QStringLiteral("content-type")] = QDBusVariant(QStringLiteral("text/plain"));
+            // replyInterfaceText[QStringLiteral("alternative")] = QDBusVariant(QStringLiteral("reply-to"));
+            // replyInterfaceText[QStringLiteral("content")] = QDBusVariant(replyTo);
+            // replyInterfaceText[QStringLiteral("interface")] = QDBusVariant(TP_QT_IFACE_CHANNEL + ".Interface.Reply");
+            //
+            // Tp::MessagePart replyPlainText;
+            // replyPlainText[QStringLiteral("content-type")] = QDBusVariant(QStringLiteral("text/plain"));
+            // replyPlainText[QStringLiteral("alternative")] = QDBusVariant(QStringLiteral("reply-to"));
+            // replyPlainText[QStringLiteral("content")] = QDBusVariant(QStringLiteral("Reply to %1:/n").arg(replyTo));
+            //
+            // Tp::MessagePart quoteText;
+            // quoteText[QStringLiteral("content-type")] = QDBusVariant(QStringLiteral("text/plain"));
+            // quoteText[QStringLiteral("alternative")] = QDBusVariant(QStringLiteral("reply-quote"));
+            // quoteText[QStringLiteral("content")] = QDBusVariant(quote);
+            // quoteText[QStringLiteral("interface")] = QDBusVariant(TP_QT_IFACE_CHANNEL + ".Interface.Reply");
+            //
+            text[QStringLiteral("content-type")] = QDBusVariant(QStringLiteral("text/plain"));
+            // text[QStringLiteral("content")]      = QDBusVariant(message);
+            text[QStringLiteral("content")]      = QDBusVariant(event->plainBody());
+        }
+    } else {
+        text[QStringLiteral("content-type")] = QDBusVariant(QStringLiteral("text/plain"));
+        text[QStringLiteral("content")]      = QDBusVariant(event->plainBody());
+    }
     body << text;
 
     Tp::MessagePartList partList;
