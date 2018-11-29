@@ -15,7 +15,10 @@ endif()
 
 add_executable(telepathy-tank ${tank_SOURCES})
 
-target_compile_options(telepathy-tank PRIVATE -Werror)
+if (PEDANTIC_BUILD)
+    target_compile_options(telepathy-tank PRIVATE -Werror)
+endif()
+
 target_compile_features(telepathy-tank PRIVATE cxx_std_11)
 
 find_package(QMatrixClient REQUIRED)
