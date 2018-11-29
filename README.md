@@ -1,14 +1,10 @@
-
-Telepathy-Tank
-================
+# Telepathy-Tank
 
 Tank is a Qt-based matrix connection operator for the Telepathy framework.
 
-Features
-========
+## Features
 
-Requirements
-============
+## Requirements
 
 * CMake 3.2 (required by TelepathyQt)
 * Qt 5.6
@@ -16,8 +12,15 @@ Requirements
 
 Note: In order to use Tank, you need to have a complementary Telepathy Client application, such as KDE-Telepathy or Empathy.
 
-Installation
-============
+## Installation
+
+### Arch Linux AUR
+
+[AUR package for WIP branch](https://aur.archlinux.org/packages/telepathy-tank-git-wip/):
+
+    yaourt -S telepathy-tank-git-wip
+
+### Manually
 
     git clone https://github.com/TelepathyIM/telepathy-tank.git
 
@@ -29,19 +32,16 @@ or
     cd tank-build
     cmake ../telepathy-tank
 
-Information about CMake build:
-* Default installation prefix is /usr/local. Probably, you'll need to set CMAKE_INSTALL_PREFIX to /usr to make DBus activation works. (-DCMAKE_INSTALL_PREFIX=/usr)
+### Information about CMake build:
 
-<!-- markdown "code after list" workaround -->
+Default installation prefix is `/usr/local`. Probably, you'll need to set `CMAKE_INSTALL_PREFIX` to `/usr` to make DBus activation works. (`-DCMAKE_INSTALL_PREFIX=/usr`)
 
     make -j4
     make install
 
-Known issues
-============
+## Known issues
 
-License
-=======
+## License
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License

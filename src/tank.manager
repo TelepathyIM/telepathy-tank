@@ -1,0 +1,14 @@
+[ConnectionManager]
+Name = tank
+BusName = org.freedesktop.Telepathy.ConnectionManager.tank
+ObjectPath = /org/freedesktop/Telepathy/ConnectionManager/tank
+
+[Protocol matrix]
+param-account = s required
+param-user=s required
+param-password=s required
+param-server=s required
+param-device=s required
+
+EnglishName=Matrix
+Icon=telepathy-tank
