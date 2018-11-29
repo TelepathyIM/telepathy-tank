@@ -23,6 +23,7 @@
 #include <TelepathyQt/Constants>
 #include <TelepathyQt/Debug>
 
+//#include "debug.hpp"
 #include "protocol.hpp"
 
 int main(int argc, char *argv[])
@@ -34,6 +35,7 @@ int main(int argc, char *argv[])
     Tp::registerTypes();
     Tp::enableDebug(true);
     Tp::enableWarnings(true);
+    // enableDebugInterface(TP_QT_CONNECTION_MANAGER_BUS_NAME_BASE + QLatin1String("tank"));
 
     Tp::BaseProtocolPtr protocol = Tp::BaseProtocol::create<MatrixProtocol>(QLatin1String("matrix"));
     Tp::BaseConnectionManagerPtr cm = Tp::BaseConnectionManager::create(QLatin1String("tank"));
