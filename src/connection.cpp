@@ -655,10 +655,7 @@ void MatrixConnection::processNewRoom(QMatrixClient::Room *room)
 
 uint MatrixConnection::ensurePseudoContact(QMatrixClient::User *user, QMatrixClient::Room *room)
 {
-    int index = m_contactIds.indexOf(user->id());
-    if (index > 0) {
-        return index + 1;
-    }
+    int index = getContactHandle(user);
     m_contactIds.append(user->id());
     index = m_contactIds.count();
     const uint handle = index;
@@ -724,9 +721,39 @@ QMatrixClient::User *MatrixConnection::getUser(const QString &id) const
     return m_connection->user(id);
 }
 
+QMatrixClient::Room *MatrixConnection::getRoom(uint handle) const
+{
+    if (handle == 0 || handle > static_cast<uint>(m_roomIds.count())) {
+        qWarning() << Q_FUNC_INFO << "Invalid handle";
+        return nullptr;
+    }
+    const QString id = m_roomIds.at(handle - 1);
+    return m_connection->room(id);
+}
+
+uint MatrixConnection::getContactHandle(QMatrixClient::User *user)
+{
+    return m_contactIds.indexOf(user->id()) + 1;
+}
+
+uint MatrixConnection::getDirectContactHandle(QMatrixClient::Room *room)
+{
+    for (uint handle : m_contacts.keys()) {
+        if (m_contacts.value(handle).room == room) {
+            return handle;
+        }
+    }
+    return 0;
+}
+
+uint MatrixConnection::getRoomHandle(QMatrixClient::Room *room)
+{
+    return m_roomIds.indexOf(room->id()) + 1;
+}
+
 uint MatrixConnection::ensureHandle(QMatrixClient::User *user)
 {
-    uint index = m_contactIds.indexOf(user->id()) + 1;
+    uint index = getContactHandle(user);
     if (index != 0) {
         return index;
     }
@@ -736,7 +763,7 @@ uint MatrixConnection::ensureHandle(QMatrixClient::User *user)
 
 uint MatrixConnection::ensureHandle(QMatrixClient::Room *room)
 {
-    uint index = m_roomIds.indexOf(room->id()) + 1;
+    uint index = getRoomHandle(room);
     if (index != 0) {
         return index;
     }

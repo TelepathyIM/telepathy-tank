@@ -130,6 +130,11 @@ public:
 
     QMatrixClient::User *getUser(uint handle) const;
     QMatrixClient::User *getUser(const QString &id) const;
+    QMatrixClient::Room *getRoom(uint handle) const;
+    uint getContactHandle(QMatrixClient::User *user);
+    uint getDirectContactHandle(QMatrixClient::Room *room);
+    uint getRoomHandle(QMatrixClient::Room *room);
+
     uint ensureHandle(QMatrixClient::User *user);
     uint ensureHandle(QMatrixClient::Room *room);
     uint ensureContactHandle(const QString &identifier);
