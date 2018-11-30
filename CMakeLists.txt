@@ -10,7 +10,7 @@ find_package(TelepathyQt5Service 0.9.6 REQUIRED)
 
 # Use the follow line to specify the path to QMatrixClient
 # set(QMatrixClient_DIR "/usr/local/lib/cmake/QMatrixClient/")
-find_package(QMatrixClient REQUIRED)
+find_package(QMatrixClient 0.4 REQUIRED)
 
 find_package(Qt5 REQUIRED COMPONENTS Core Gui DBus Xml Network)
 
