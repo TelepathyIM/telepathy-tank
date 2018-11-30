@@ -8,7 +8,8 @@ Tank is a Qt-based matrix connection operator for the Telepathy framework.
 
 * CMake 3.2 (required by TelepathyQt)
 * Qt 5.6
-* TelepathyQt 0.9.7
+* [TelepathyQt 0.9.7](https://github.com/TelepathyIM/telepathy-qt)
+* [libqmatrixclient 0.4](https://github.com/QMatrixClient/libqmatrixclient/)
 
 Note: In order to use Tank, you need to have a complementary Telepathy Client application, such as KDE-Telepathy or Empathy.
 
@@ -16,9 +17,9 @@ Note: In order to use Tank, you need to have a complementary Telepathy Client ap
 
 ### Arch Linux AUR
 
-[AUR package for WIP branch](https://aur.archlinux.org/packages/telepathy-tank-git-wip/):
+[AUR package for git version](https://aur.archlinux.org/packages/telepathy-tank-git/):
 
-    yaourt -S telepathy-tank-git-wip
+    yaourt -S telepathy-tank-git
 
 ### Manually
 
