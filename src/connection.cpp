@@ -664,9 +664,17 @@ uint MatrixConnection::ensurePseudoContact(QMatrixClient::User *user, QMatrixCli
     return handle;
 }
 
-void MatrixConnection::prefetchRoomHistory(QMatrixClient::Room *room, Tp::HandleType type, uint handle)
+void MatrixConnection::prefetchHistory(QMatrixClient::Room *room)
 {
     if (room->messageEvents().begin() == room->messageEvents().end()) {
+        return;
+    }
+
+    uint handleType = room->isDirectChat() ? Tp::HandleTypeContact : Tp::HandleTypeRoom;
+    uint handle = room->isDirectChat() ? getDirectContactHandle(room) : getRoomHandle(room);
+
+    if (!handle) {
+        qWarning() << Q_FUNC_INFO << "Unknown room" << room->id();
         return;
     }
 
@@ -674,7 +682,7 @@ void MatrixConnection::prefetchRoomHistory(QMatrixClient::Room *room, Tp::Handle
     Tp::DBusError error;
     Tp::BaseChannelPtr channel = ensureChannel(
                 QVariantMap({
-                                { TP_QT_IFACE_CHANNEL + QLatin1String(".TargetHandleType"), type },
+                                { TP_QT_IFACE_CHANNEL + QLatin1String(".TargetHandleType"), handleType },
                                 { TP_QT_IFACE_CHANNEL + QLatin1String(".TargetHandle"), handle },
                                 { TP_QT_IFACE_CHANNEL + QLatin1String(".ChannelType"), TP_QT_IFACE_CHANNEL_TYPE_TEXT },
                             }),

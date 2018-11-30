@@ -139,7 +139,7 @@ public:
     uint ensureHandle(QMatrixClient::Room *room);
     uint ensureContactHandle(const QString &identifier);
 
-    void prefetchRoomHistory(QMatrixClient::Room *room, Tp::HandleType type, uint handle);
+    void prefetchHistory(QMatrixClient::Room *room);
 
     void startMechanismWithData_authCode(const QString &mechanism, const QByteArray &data, Tp::DBusError *error);
     void startMechanismWithData_password(const QString &mechanism, const QByteArray &data, Tp::DBusError *error);
