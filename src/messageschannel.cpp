@@ -150,6 +150,8 @@ void MatrixMessagesChannel::processMessageEvent(const QMatrixClient::RoomMessage
     QJsonDocument doc(event->originalJsonObject());
     qDebug().noquote() << Q_FUNC_INFO << "Process message" << doc.toJson(QJsonDocument::Indented);
     Tp::MessagePart header;
+    // mark all messages as scrollback
+    header[QStringLiteral("scrollback")] = QDBusVariant(true);
     header[QStringLiteral("message-token")] = QDBusVariant(event->id());
     header[QStringLiteral("message-sent")]  = QDBusVariant(event->timestamp().toMSecsSinceEpoch() / 1000);
     header[QStringLiteral("message-received")] = QDBusVariant(event->timestamp().toMSecsSinceEpoch() / 1000);
