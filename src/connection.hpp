@@ -122,10 +122,8 @@ protected slots:
     void onUserAvatarChanged(QMatrixClient::User *user);
 
 public:
-    bool loadSessionData(const QString &user);
-    bool saveSessionData(const QString &user, const QByteArray &data);
-
-    void tryToSaveData();
+    bool loadSessionData();
+    bool saveSessionData() const;
 
     void processNewRoom(QMatrixClient::Room *room);
     uint ensurePseudoContact(QMatrixClient::User *user, QMatrixClient::Room *room);

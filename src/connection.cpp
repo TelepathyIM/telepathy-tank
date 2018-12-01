@@ -51,6 +51,7 @@
 
 static const QString secretsDirPath = QLatin1String("/secrets/");
 static const QString c_saslMechanismTelepathyPassword = QLatin1String("X-TELEPATHY-PASSWORD");
+static const int c_sessionDataFormat = 1;
 
 Tp::AvatarSpec MatrixConnection::getAvatarSpec()
 {
@@ -225,7 +226,7 @@ void MatrixConnection::doConnect(Tp::DBusError *error)
         qDebug() << "Resolve error: " << error;
     });
 
-    if (loadSessionData(m_user)) {
+    if (loadSessionData()) {
         qDebug() << Q_FUNC_INFO << "connectWithToken" << m_user << m_accessToken << m_deviceId;
         m_connection->connectWithToken(m_userId, QString::fromLatin1(m_accessToken), m_deviceId);
     } else {
@@ -538,7 +539,7 @@ void MatrixConnection::onConnected()
     m_connection->sync();
 
     qDebug() << Q_FUNC_INFO;
-    tryToSaveData();
+    saveSessionData();
 }
 
 void MatrixConnection::onSyncDone()
@@ -572,53 +573,63 @@ void MatrixConnection::onUserAvatarChanged(QMatrixClient::User *user)
     qDebug() << Q_FUNC_INFO << "retrieved";
 }
 
-bool MatrixConnection::loadSessionData(const QString &user)
+bool MatrixConnection::loadSessionData()
 {
-    qDebug() << Q_FUNC_INFO << QStandardPaths::writableLocation(QStandardPaths::CacheLocation) + secretsDirPath + user;
-    QFile secretFile(QStandardPaths::writableLocation(QStandardPaths::CacheLocation) + secretsDirPath + user);
-    if (secretFile.open(QIODevice::ReadOnly)) {
-        const QByteArray data = secretFile.readAll();
-        qDebug() << Q_FUNC_INFO << user << "(" << data.size() << "bytes)";
-        QJsonParseError parseError;
-        QJsonDocument doc = QJsonDocument::fromJson(data, &parseError);
-        QJsonObject session = doc.object();
-        m_accessToken = QByteArray::fromHex(session.value(QLatin1String("accessToken")).toVariant().toByteArray());
-        m_userId = session.value(QLatin1String("userId")).toString();
-        m_homeServer = session.value(QLatin1String("homeServer")).toString();
-        m_deviceId = session.value(QLatin1String("deviceId")).toString();
-        return !m_accessToken.isEmpty();
+    qDebug() << Q_FUNC_INFO << QStandardPaths::writableLocation(QStandardPaths::CacheLocation) + secretsDirPath + m_user;
+    QFile secretFile(QStandardPaths::writableLocation(QStandardPaths::CacheLocation) + secretsDirPath + m_user);
+    if (!secretFile.open(QIODevice::ReadOnly)) {
+        qDebug() << Q_FUNC_INFO << "Unable to open file" << "for account" << m_user;
+        return false;
     }
-    qDebug() << Q_FUNC_INFO << "Unable to open file" << "for account" << user;
-    return false;
+    const QByteArray data = secretFile.readAll();
+    qDebug() << Q_FUNC_INFO << m_user << "(" << data.size() << "bytes)";
+    QJsonParseError parseError;
+    const QJsonDocument doc = QJsonDocument::fromJson(data, &parseError);
+
+    const int format = doc.object().value("format").toInt();
+    if (format > c_sessionDataFormat) {
+        qWarning() << Q_FUNC_INFO << "Unsupported file format" << format;
+        return false;
+    }
+
+    QJsonObject session = doc.object().value("session").toObject();
+    m_accessToken = QByteArray::fromHex(session.value(QLatin1String("accessToken")).toVariant().toByteArray());
+    m_userId = session.value(QLatin1String("userId")).toString();
+    m_homeServer = session.value(QLatin1String("homeServer")).toString();
+    m_deviceId = session.value(QLatin1String("deviceId")).toString();
+
+    return !m_accessToken.isEmpty();
 }
 
-bool MatrixConnection::saveSessionData(const QString &user, const QByteArray &data)
-{
-    QDir dir;
-    dir.mkpath(QStandardPaths::writableLocation(QStandardPaths::CacheLocation) + secretsDirPath);
-    QFile secretFile(QStandardPaths::writableLocation(QStandardPaths::CacheLocation) + secretsDirPath + user);
-    if (secretFile.open(QIODevice::WriteOnly)) {
-        qDebug() << Q_FUNC_INFO << user << "(" << data.size() << "bytes)";
-        return secretFile.write(data) == data.size();
-    }
-    qWarning() << Q_FUNC_INFO << "Unable to save the session data to file" << "for account" << user;
-    return false;
-}
-
-void MatrixConnection::tryToSaveData()
+bool MatrixConnection::saveSessionData() const
 {
     if (!m_connection) {
-        return;
+        return false;
     }
-    QJsonObject session;
 
-    session.insert(QLatin1String("accessToken"), QString::fromLatin1(m_connection->accessToken().toHex()));
-    session.insert(QLatin1String("userId"), m_connection->userId());
-    session.insert(QLatin1String("homeServer"), m_connection->homeserver().toString());
-    session.insert(QLatin1String("deviceId"), m_connection->deviceId());
-    QJsonDocument doc(session);
+    QJsonObject sessionObject;
+    sessionObject.insert(QLatin1String("accessToken"), QString::fromLatin1(m_connection->accessToken().toHex()));
+    sessionObject.insert(QLatin1String("userId"), m_connection->userId());
+    sessionObject.insert(QLatin1String("homeServer"), m_connection->homeserver().toString());
+    sessionObject.insert(QLatin1String("deviceId"), m_connection->deviceId());
 
-    saveSessionData(m_user, doc.toJson(QJsonDocument::Indented));
+    QJsonObject rootObject;
+    rootObject.insert("session", sessionObject);
+    rootObject.insert("format", c_sessionDataFormat);
+    QJsonDocument doc(sessionObject);
+
+    const QByteArray data = doc.toJson(QJsonDocument::Indented);
+
+    QDir dir;
+    dir.mkpath(QStandardPaths::writableLocation(QStandardPaths::CacheLocation) + secretsDirPath);
+    QFile secretFile(QStandardPaths::writableLocation(QStandardPaths::CacheLocation) + secretsDirPath + m_user);
+    if (!secretFile.open(QIODevice::WriteOnly)) {
+        qWarning() << Q_FUNC_INFO << "Unable to save the session data to file" << "for account" << m_user;
+        return false;
+    }
+
+    qDebug() << Q_FUNC_INFO << m_user << "(" << data.size() << "bytes)";
+    return secretFile.write(data) == data.size();
 }
 
 void MatrixConnection::processNewRoom(QMatrixClient::Room *room)
