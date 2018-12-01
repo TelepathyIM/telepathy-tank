@@ -129,3 +129,13 @@ void MatrixMessagesChannel::processMessageEvent(const QMatrixClient::RoomMessage
     partList << header << body;
     addReceivedMessage(partList);
 }
+
+void MatrixMessagesChannel::fetchHistory()
+{
+    for (auto eventIt = m_room->messageEvents().begin(); eventIt < m_room->messageEvents().end(); ++eventIt) {
+        const QMatrixClient::RoomMessageEvent *event = eventIt->viewAs<QMatrixClient::RoomMessageEvent>();
+        if (event) {
+            processMessageEvent(event);
+        }
+    }
+}

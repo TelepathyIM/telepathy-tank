@@ -699,13 +699,7 @@ void MatrixConnection::prefetchHistory(QMatrixClient::Room *room)
         qDebug() << "Error, channel is not a TextChannel?";
         return;
     }
-    for (auto eventIt = room->messageEvents().begin(); eventIt < room->messageEvents().end(); ++eventIt) {
-        auto *event = eventIt->viewAs<QMatrixClient::RoomMessageEvent>();
-        if (event) {
-//                qDebug() << e->plainBody();
-            textChannel->processMessageEvent(event);
-        }
-    }
+    textChannel->fetchHistory();
 }
 
 QMatrixClient::User *MatrixConnection::getUser(uint handle) const

@@ -66,6 +66,8 @@ public:
 
     void messageAcknowledgedCallback(const QString &messageId);
 
+    void fetchHistory();
+
 private:
     MatrixMessagesChannel(MatrixConnection *connection, Tp::BaseChannel *baseChannel);
 
