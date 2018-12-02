@@ -582,6 +582,10 @@ void MatrixConnection::processNewRoom(QMatrixClient::Room *room)
     } else {
         ensureHandle(room);
     }
+
+    QTimer::singleShot(2000, this, [this, room]() {
+        prefetchHistory(room);
+    });
 }
 
 uint MatrixConnection::ensureDirectContact(QMatrixClient::User *user, QMatrixClient::Room *room)
