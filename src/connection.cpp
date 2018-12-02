@@ -429,7 +429,7 @@ Tp::ContactAttributesMap MatrixConnection::getContactListAttributes(const QStrin
                                                                     bool hold, Tp::DBusError *error)
 {
     Q_UNUSED(hold)
-    return getContactAttributes(m_contacts.keys(), interfaces, error);
+    return getContactAttributes(m_directContacts.keys(), interfaces, error);
 }
 
 Tp::ContactAttributesMap MatrixConnection::getContactAttributes(const Tp::UIntList &handles,
@@ -469,7 +469,7 @@ Tp::ContactAttributesMap MatrixConnection::getContactAttributes(const Tp::UIntLi
 
         // Attributes not applicable for the self contact
         if (interfaces.contains(TP_QT_IFACE_CONNECTION_INTERFACE_CONTACT_LIST)) {
-            const Tp::SubscriptionState state = m_contacts.contains(handle) ? Tp::SubscriptionStateYes : Tp::SubscriptionStateNo;
+            const Tp::SubscriptionState state = m_directContacts.contains(handle) ? Tp::SubscriptionStateYes : Tp::SubscriptionStateNo;
             attributes[TP_QT_IFACE_CONNECTION_INTERFACE_CONTACT_LIST + QLatin1String("/subscribe")] = state;
             attributes[TP_QT_IFACE_CONNECTION_INTERFACE_CONTACT_LIST + QLatin1String("/publish")] = state;
         }
@@ -649,18 +649,14 @@ void MatrixConnection::processNewRoom(QMatrixClient::Room *room)
 //        }
         // Process like a contact
         qDebug() << "    " << user->id() << user->displayname();
-        ensurePseudoContact(user, room);
+        ensureDirectContact(user, room);
     }
 }
 
-uint MatrixConnection::ensurePseudoContact(QMatrixClient::User *user, QMatrixClient::Room *room)
+uint MatrixConnection::ensureDirectContact(QMatrixClient::User *user, QMatrixClient::Room *room)
 {
-    int index = getContactHandle(user);
-    m_contactIds.append(user->id());
-    index = m_contactIds.count();
-    const uint handle = index;
-    m_contacts.insert(handle, PseudoContact(user, room));
-
+    const uint handle = ensureHandle(user);
+    m_directContacts.insert(handle, DirectContact(user, room));
     return handle;
 }
 
@@ -723,6 +719,11 @@ QMatrixClient::User *MatrixConnection::getUser(const QString &id) const
     return m_connection->user(id);
 }
 
+DirectContact MatrixConnection::getDirectContact(uint contactHandle) const
+{
+    return m_directContacts.value(contactHandle);
+}
+
 QMatrixClient::Room *MatrixConnection::getRoom(uint handle) const
 {
     if (handle == 0 || handle > static_cast<uint>(m_roomIds.count())) {
@@ -740,8 +741,8 @@ uint MatrixConnection::getContactHandle(QMatrixClient::User *user)
 
 uint MatrixConnection::getDirectContactHandle(QMatrixClient::Room *room)
 {
-    for (uint handle : m_contacts.keys()) {
-        if (m_contacts.value(handle).room == room) {
+    for (uint handle : m_directContacts.keys()) {
+        if (m_directContacts.value(handle).room == room) {
             return handle;
         }
     }

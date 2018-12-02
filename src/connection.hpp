@@ -49,10 +49,10 @@ class Connection;
 
 } // QMatrixClient
 
-struct PseudoContact {
-    PseudoContact() = default;
-    PseudoContact(const PseudoContact &contact) = default;
-    PseudoContact(QMatrixClient::User *u, QMatrixClient::Room *r = nullptr)
+struct DirectContact {
+    DirectContact() = default;
+    DirectContact(const DirectContact &contact) = default;
+    DirectContact(QMatrixClient::User *u, QMatrixClient::Room *r = nullptr)
         : user(u),
           room(r)
     {
@@ -126,10 +126,11 @@ public:
     bool saveSessionData() const;
 
     void processNewRoom(QMatrixClient::Room *room);
-    uint ensurePseudoContact(QMatrixClient::User *user, QMatrixClient::Room *room);
+    uint ensureDirectContact(QMatrixClient::User *user, QMatrixClient::Room *room);
 
     QMatrixClient::User *getUser(uint handle) const;
     QMatrixClient::User *getUser(const QString &id) const;
+    DirectContact getDirectContact(uint contactHandle) const;
     QMatrixClient::Room *getRoom(uint handle) const;
     uint getContactHandle(QMatrixClient::User *user);
     uint getDirectContactHandle(QMatrixClient::Room *room);
@@ -160,7 +161,7 @@ public:
     Tp::BaseChannelSASLAuthenticationInterfacePtr saslIface_password;
 
     QMatrixClient::Connection *m_connection = nullptr;
-    QHash<uint, PseudoContact> m_contacts; // Handle to contact
+    QHash<uint, DirectContact> m_directContacts; // Handle to contact, also known as contactlist or roster in other IM
     QStringList m_contactIds;
     QStringList m_roomIds;
 
