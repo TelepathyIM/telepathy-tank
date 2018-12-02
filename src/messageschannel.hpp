@@ -71,6 +71,8 @@ public:
 private:
     MatrixMessagesChannel(MatrixConnection *connection, QMatrixClient::Room *room, Tp::BaseChannel *baseChannel);
 
+    void onPendingEventChanged(int pendingEventIndex);
+
     MatrixConnection *m_connection = nullptr;
     QMatrixClient::Room *m_room = nullptr;
 

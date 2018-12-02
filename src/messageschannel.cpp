@@ -44,10 +44,13 @@ MatrixMessagesChannel::MatrixMessagesChannel(MatrixConnection *connection, QMatr
     QStringList supportedContentTypes = QStringList() << QStringLiteral("text/plain");
     const QList<uint> messageTypes = {
         Tp::ChannelTextMessageTypeNormal,
+        Tp::ChannelTextMessageTypeDeliveryReport,
     };
 
-    uint messagePartSupportFlags = 0; // Tp::MessageSendingFlagReportDelivery | Tp::MessageSendingFlagReportRead;
-    uint deliveryReportingSupport = 0; // Tp::DeliveryReportingSupportFlagReceiveSuccesses | Tp::DeliveryReportingSupportFlagReceiveRead;
+    uint messagePartSupportFlags = Tp::MessageSendingFlagReportDelivery | Tp::MessageSendingFlagReportRead;
+    uint deliveryReportingSupport = Tp::DeliveryReportingSupportFlagReceiveFailures
+            | Tp::DeliveryReportingSupportFlagReceiveSuccesses
+            | Tp::DeliveryReportingSupportFlagReceiveRead;
 
     // setMessageAcknowledgedCallback(Tp::memFun(this, &MatrixMessagesChannel::messageAcknowledged));
 
@@ -89,6 +92,39 @@ MatrixMessagesChannel::MatrixMessagesChannel(MatrixConnection *connection, QMatr
     }
 }
 
+void MatrixMessagesChannel::onPendingEventChanged(int pendingEventIndex)
+{
+    // Delivery Report message
+    // https://telepathy.freedesktop.org/spec/Channel_Interface_Messages.html#Enum:Delivery_Status
+    // https://matrix.org/docs/spec/client_server/r0.4.0.html#put-matrix-client-r0-rooms-roomid-send-eventtype-txnid
+
+    const QMatrixClient::PendingEventItem &pendingEvent = m_room->pendingEvents().at(pendingEventIndex);
+    Tp::DeliveryStatus tpDeliveryStatus;
+    switch (pendingEvent.deliveryStatus()) {
+    case QMatrixClient::EventStatus::ReachedServer:
+        tpDeliveryStatus = Tp::DeliveryStatusAccepted;
+        break;
+    case QMatrixClient::EventStatus::SendingFailed:
+        tpDeliveryStatus = Tp::DeliveryStatusTemporarilyFailed;
+        break;
+    default:
+        tpDeliveryStatus = Tp::DeliveryStatusUnknown;
+        break;
+    }
+
+    Tp::MessagePartList partList;
+
+    Tp::MessagePart header;
+    header[QStringLiteral("message-sender")]    = QDBusVariant(m_targetHandle);
+    header[QStringLiteral("message-sender-id")] = QDBusVariant(m_targetId);
+    header[QStringLiteral("message-type")]      = QDBusVariant(Tp::ChannelTextMessageTypeDeliveryReport);
+    header[QStringLiteral("delivery-status")]   = QDBusVariant(tpDeliveryStatus);
+    header[QStringLiteral("delivery-token")]    = QDBusVariant(pendingEvent.event()->transactionId());
+    partList << header;
+
+    addReceivedMessage(partList);
+}
+
 MatrixMessagesChannelPtr MatrixMessagesChannel::create(MatrixConnection *connection, QMatrixClient::Room *room, Tp::BaseChannel *baseChannel)
 {
     return MatrixMessagesChannelPtr(new MatrixMessagesChannel(connection, room, baseChannel));
@@ -96,7 +132,19 @@ MatrixMessagesChannelPtr MatrixMessagesChannel::create(MatrixConnection *connect
 
 QString MatrixMessagesChannel::sendMessageCallback(const Tp::MessagePartList &messageParts, uint flags, Tp::DBusError *error)
 {
-    return QString();
+    QString content;
+    foreach (const Tp::MessagePart &part, messageParts) {
+        if (part.contains(QStringLiteral("content-type"))
+                && part.value(QStringLiteral("content-type")).variant().toString() == QStringLiteral("text/plain")
+                && part.contains(QStringLiteral("content"))) {
+            content = part.value(QStringLiteral("content")).variant().toString();
+            break;
+        }
+    }
+
+    connect(m_room, &QMatrixClient::Room::pendingEventChanged, this, &MatrixMessagesChannel::onPendingEventChanged);
+    QString txnId = m_room->postPlainText(content);
+    return txnId;
 }
 
 void MatrixMessagesChannel::processMessageEvent(const QMatrixClient::RoomMessageEvent *event)
