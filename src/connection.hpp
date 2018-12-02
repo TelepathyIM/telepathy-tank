@@ -57,6 +57,7 @@ struct DirectContact {
           room(r)
     {
     }
+    bool isValid() const { return user && room; }
     QMatrixClient::User *user = nullptr;
     QMatrixClient::Room *room = nullptr;
 };

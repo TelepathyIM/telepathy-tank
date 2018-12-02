@@ -637,24 +637,22 @@ void MatrixConnection::processNewRoom(QMatrixClient::Room *room)
     qDebug() << Q_FUNC_INFO << room;
     qDebug() << room->displayName() << room->topic();
     qDebug() << room->memberNames();
-    // TODO: DirectChat
-    // https://matrix.org/docs/spec/client_server/r0.3.0.html#direct-messaging
-
-    for (QMatrixClient::User *user : room->users()) {
-        if (user == room->localUser()) {
-            continue;
+    if (room->isDirectChat()) {
+        // Single user room
+        for (QMatrixClient::User *user : room->users()) {
+            if (user == room->localUser()) {
+                continue;
+            }
+            ensureDirectContact(user, room);
         }
-//        if (room->displayName() != user->displayname()) {
-//            return false;
-//        }
-        // Process like a contact
-        qDebug() << "    " << user->id() << user->displayname();
-        ensureDirectContact(user, room);
+    } else {
+        ensureHandle(room);
     }
 }
 
 uint MatrixConnection::ensureDirectContact(QMatrixClient::User *user, QMatrixClient::Room *room)
 {
+    qDebug() << Q_FUNC_INFO << user->id() << user->displayname();
     const uint handle = ensureHandle(user);
     m_directContacts.insert(handle, DirectContact(user, room));
     return handle;
