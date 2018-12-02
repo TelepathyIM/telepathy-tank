@@ -408,12 +408,25 @@ Tp::BaseChannelPtr MatrixConnection::createChannelCB(const QVariantMap &request,
         return Tp::BaseChannelPtr();
     }
 
+    QMatrixClient::Room *targetRoom = nullptr;
+    if (targetHandleType == Tp::HandleTypeContact) {
+        DirectContact contact = getDirectContact(targetHandle);
+        if (!contact.isValid()) {
+            error->set(TP_QT_ERROR_NOT_IMPLEMENTED, QStringLiteral("Requested single chat does not exist yet "
+                                                                   "(and DirectChat creation is not supported yet"));
+            return Tp::BaseChannelPtr();
+        }
+        targetRoom = contact.room;
+    } else {
+        targetRoom = getRoom(targetHandle);
+    }
+
     Tp::BaseChannelPtr baseChannel = Tp::BaseChannel::create(this, details.channelType(), targetHandleType, targetHandle);
     baseChannel->setTargetID(targetID);
     baseChannel->setRequested(details.isRequested());
 
     if (details.channelType() == TP_QT_IFACE_CHANNEL_TYPE_TEXT) {
-        MatrixMessagesChannelPtr messagesChannel = MatrixMessagesChannel::create(this, baseChannel.data());
+        MatrixMessagesChannelPtr messagesChannel = MatrixMessagesChannel::create(this, targetRoom, baseChannel.data());
         baseChannel->plugInterface(Tp::AbstractChannelInterfacePtr::dynamicCast(messagesChannel));
     }
 

@@ -33,9 +33,10 @@
 #include <user.h>
 #include <events/roommemberevent.h>
 
-MatrixMessagesChannel::MatrixMessagesChannel(MatrixConnection *connection, Tp::BaseChannel *baseChannel)
+MatrixMessagesChannel::MatrixMessagesChannel(MatrixConnection *connection, QMatrixClient::Room *room, Tp::BaseChannel *baseChannel)
     : Tp::BaseChannelTextType(baseChannel),
       m_connection(connection),
+      m_room(room),
       m_targetHandle(baseChannel->targetHandle()),
       m_targetHandleType(baseChannel->targetHandleType()),
       m_targetId(baseChannel->targetID())
@@ -64,8 +65,6 @@ MatrixMessagesChannel::MatrixMessagesChannel(MatrixConnection *connection, Tp::B
     // baseChannel->plugInterface(Tp::AbstractChannelInterfacePtr::dynamicCast(m_chatStateIface));
 
     if (m_targetHandleType == Tp::HandleTypeRoom) {
-        m_room = connection->matrix()->room(m_targetId);
-
         Tp::ChannelGroupFlags groupFlags = 0;
         m_groupIface = Tp::BaseChannelGroupInterface::create();
         m_groupIface->setGroupFlags(groupFlags);
@@ -90,9 +89,9 @@ MatrixMessagesChannel::MatrixMessagesChannel(MatrixConnection *connection, Tp::B
     }
 }
 
-MatrixMessagesChannelPtr MatrixMessagesChannel::create(MatrixConnection *connection, Tp::BaseChannel *baseChannel)
+MatrixMessagesChannelPtr MatrixMessagesChannel::create(MatrixConnection *connection, QMatrixClient::Room *room, Tp::BaseChannel *baseChannel)
 {
-    return MatrixMessagesChannelPtr(new MatrixMessagesChannel(connection, baseChannel));
+    return MatrixMessagesChannelPtr(new MatrixMessagesChannel(connection, room, baseChannel));
 }
 
 QString MatrixMessagesChannel::sendMessageCallback(const Tp::MessagePartList &messageParts, uint flags, Tp::DBusError *error)

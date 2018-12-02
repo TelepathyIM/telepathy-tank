@@ -59,7 +59,7 @@ class MatrixMessagesChannel : public Tp::BaseChannelTextType
 {
     Q_OBJECT
 public:
-    static MatrixMessagesChannelPtr create(MatrixConnection *connection, Tp::BaseChannel *baseChannel);
+    static MatrixMessagesChannelPtr create(MatrixConnection *connection, QMatrixClient::Room *room, Tp::BaseChannel *baseChannel);
 
     QString sendMessageCallback(const Tp::MessagePartList &messageParts, uint flags, Tp::DBusError *error);
     void processMessageEvent(const QMatrixClient::RoomMessageEvent *event);
@@ -69,7 +69,7 @@ public:
     void fetchHistory();
 
 private:
-    MatrixMessagesChannel(MatrixConnection *connection, Tp::BaseChannel *baseChannel);
+    MatrixMessagesChannel(MatrixConnection *connection, QMatrixClient::Room *room, Tp::BaseChannel *baseChannel);
 
     MatrixConnection *m_connection = nullptr;
     QMatrixClient::Room *m_room = nullptr;
