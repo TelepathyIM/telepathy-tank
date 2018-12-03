@@ -166,11 +166,11 @@ public:
     QStringList m_contactIds;
     QStringList m_roomIds;
 
-    QString m_user;
+    QString m_user; // User id as given by user during the account setup
     QString m_password;
     QString m_server;
 
-    QString m_userId;
+    QString m_userId; // User id in Matrix form (@user:domain)
     QByteArray m_accessToken;
     QString m_homeServer;
     QString m_deviceId;

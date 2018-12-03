@@ -195,8 +195,6 @@ MatrixConnection::MatrixConnection(const QDBusConnection &dbusConnection, const 
     m_avatarsIface->setRequestAvatarsCallback(Tp::memFun(this, &MatrixConnection::requestAvatars));
     plugInterface(Tp::AbstractConnectionInterfacePtr::dynamicCast(m_avatarsIface));
 
-    setSelfContact(ensureContactHandle(m_user), m_user);
-
     connect(this, &MatrixConnection::disconnected, this, &MatrixConnection::doDisconnect);
 }
 
@@ -543,8 +541,13 @@ void MatrixConnection::onConnected()
         qWarning() << Q_FUNC_INFO << "bad.";
     }
 
-    m_contactIds.append(m_connection->userId());
-//    setSelfContact(1, m_contactIds.first());
+    m_userId = m_connection->userId();
+
+    uint selfId = ensureContactHandle(m_userId);
+    if (selfId != 1) {
+        qWarning() << "Self ID seems to be set too late";
+    }
+    setSelfContact(selfId, m_userId);
 
     setStatus(Tp::ConnectionStatusConnected, Tp::ConnectionStatusReasonRequested);
     m_contactListIface->setContactListState(Tp::ContactListStateWaiting);
