@@ -29,7 +29,9 @@
 // QMatrixClient
 #include <connection.h>
 #include <room.h>
+#include <settings.h>
 #include <user.h>
+#include <events/roommemberevent.h>
 
 MatrixMessagesChannel::MatrixMessagesChannel(MatrixConnection *connection, QMatrixClient::Room *room, Tp::BaseChannel *baseChannel)
     : Tp::BaseChannelTextType(baseChannel),
@@ -130,6 +132,11 @@ MatrixMessagesChannelPtr MatrixMessagesChannel::create(MatrixConnection *connect
 
 QString MatrixMessagesChannel::sendMessageCallback(const Tp::MessagePartList &messageParts, uint flags, Tp::DBusError *error)
 {
+    if (!m_room) {
+        // TODO: error?
+        qDebug() << Q_FUNC_INFO;
+        return QString();
+    }
     QString content;
     foreach (const Tp::MessagePart &part, messageParts) {
         if (part.contains(QStringLiteral("content-type"))
