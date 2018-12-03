@@ -491,6 +491,7 @@ void MatrixConnection::onSyncDone()
     }
 
     m_contactListIface->setContactListState(Tp::ContactListStateSuccess);
+    saveSessionData();
 }
 
 void MatrixConnection::onUserAvatarChanged(QMatrixClient::User *user)
@@ -547,8 +548,17 @@ bool MatrixConnection::saveSessionData() const
     sessionObject.insert(QLatin1String("homeServer"), m_connection->homeserver().toString());
     sessionObject.insert(QLatin1String("deviceId"), m_connection->deviceId());
 
+    QJsonObject updatesState;
+    QJsonArray roomsState;
+//    for () {
+
+//    }
+
+    updatesState.insert("rooms", roomsState);
+
     QJsonObject rootObject;
     rootObject.insert("session", sessionObject);
+    rootObject.insert("updatesState", updatesState);
     rootObject.insert("format", c_sessionDataFormat);
     QJsonDocument doc(sessionObject);
 
@@ -579,13 +589,12 @@ void MatrixConnection::processNewRoom(QMatrixClient::Room *room)
             }
             ensureDirectContact(user, room);
         }
+        QTimer::singleShot(2000, this, [this, room]() {
+            prefetchHistory(room);
+        });
     } else {
         ensureHandle(room);
     }
-
-    QTimer::singleShot(2000, this, [this, room]() {
-        prefetchHistory(room);
-    });
 }
 
 uint MatrixConnection::ensureDirectContact(QMatrixClient::User *user, QMatrixClient::Room *room)

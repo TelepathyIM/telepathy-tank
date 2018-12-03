@@ -88,6 +88,10 @@ MatrixMessagesChannel::MatrixMessagesChannel(MatrixConnection *connection, QMatr
                                                            /* creationTimestamp */ QDateTime());
         baseChannel->plugInterface(Tp::AbstractChannelInterfacePtr::dynamicCast(m_roomIface));
     }
+
+    QTimer::singleShot(1000, this, [this]() {
+        fetchHistory();
+    });
 }
 
 void MatrixMessagesChannel::onPendingEventChanged(int pendingEventIndex)
@@ -239,10 +243,16 @@ void MatrixMessagesChannel::processMessageEvent(const QMatrixClient::RoomMessage
 
 void MatrixMessagesChannel::fetchHistory()
 {
+    const QMatrixClient::RoomEvent *readEvent = m_room->readMarker()->event();
+    qWarning() << Q_FUNC_INFO << readEvent->id() << readEvent->timestamp();
+
     for (auto eventIt = m_room->messageEvents().begin(); eventIt < m_room->messageEvents().end(); ++eventIt) {
-        const QMatrixClient::RoomMessageEvent *event = eventIt->viewAs<QMatrixClient::RoomMessageEvent>();
-        if (event) {
-            processMessageEvent(event);
+        const QMatrixClient::RoomEvent *event = eventIt->get();
+        qWarning() << event->id() << event->timestamp() << event->transactionId();
+
+        const QMatrixClient::RoomMessageEvent *messageEvent = eventIt->viewAs<QMatrixClient::RoomMessageEvent>();
+        if (messageEvent) {
+            processMessageEvent(messageEvent);
         }
     }
 }
