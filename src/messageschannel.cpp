@@ -29,9 +29,7 @@
 // QMatrixClient
 #include <connection.h>
 #include <room.h>
-#include <settings.h>
 #include <user.h>
-#include <events/roommemberevent.h>
 
 MatrixMessagesChannel::MatrixMessagesChannel(MatrixConnection *connection, QMatrixClient::Room *room, Tp::BaseChannel *baseChannel)
     : Tp::BaseChannelTextType(baseChannel),
