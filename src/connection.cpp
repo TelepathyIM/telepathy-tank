@@ -32,10 +32,6 @@
 #include <QFile>
 #include <QTimer>
 
-#ifdef QT_NO_CAST_FROM_ASCII
-#undef QT_NO_CAST_FROM_ASCII
-#endif
-
 // QMatrixClient
 #include <connection.h>
 #include <room.h>
