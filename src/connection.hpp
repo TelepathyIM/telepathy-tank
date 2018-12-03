@@ -78,7 +78,7 @@ public:
     MatrixConnection(const QDBusConnection &dbusConnection,
             const QString &cmName, const QString &protocolName,
             const QVariantMap &parameters);
-    ~MatrixConnection();
+    ~MatrixConnection() override;
 
     static Tp::AvatarSpec getAvatarSpec();
     static Tp::SimpleStatusSpecMap getSimpleStatusSpecMap();
@@ -102,7 +102,7 @@ public:
     Tp::ContactInfoFieldList getUserInfo(const quint32 userId) const;
     Tp::ContactInfoMap getContactInfo(const Tp::UIntList &contacts, Tp::DBusError *error);
 
-    Tp::AliasMap getAliases(const Tp::UIntList &handles, Tp::DBusError *error = 0);
+    Tp::AliasMap getAliases(const Tp::UIntList &handles, Tp::DBusError *error = nullptr);
     QString getContactAlias(uint handle) const;
 
     Tp::SimplePresence getPresence(uint handle);
