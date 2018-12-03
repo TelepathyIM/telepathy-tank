@@ -537,10 +537,6 @@ uint MatrixConnection::setPresence(const QString &status, const QString &message
 
 void MatrixConnection::onConnected()
 {
-    if (!m_contactIds.isEmpty()) {
-        qWarning() << Q_FUNC_INFO << "bad.";
-    }
-
     m_userId = m_connection->userId();
 
     uint selfId = ensureContactHandle(m_userId);
