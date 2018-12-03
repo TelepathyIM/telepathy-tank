@@ -19,6 +19,7 @@
 
 #include "connection.hpp"
 #include "messageschannel.hpp"
+#include "requestdetails.hpp"
 
 #include <TelepathyQt/Constants>
 #include <TelepathyQt/BaseChannel>
@@ -292,81 +293,6 @@ Tp::UIntList MatrixConnection::requestHandles(uint handleType, const QStringList
         result.append(handle);
     }
     return result;
-}
-
-class RequestDetails : public QVariantMap
-{
-public:
-    RequestDetails() = default;
-    RequestDetails(const RequestDetails &details) = default;
-    RequestDetails(const QVariantMap &details) :
-        QVariantMap(details)
-    {
-    }
-
-    RequestDetails& operator=(const QVariantMap &details)
-    {
-        *(static_cast<QVariantMap*>(this)) = details;
-        return *this;
-    }
-
-    QString channelType() const;
-    Tp::HandleType targetHandleType() const;
-    bool isRequested() const;
-
-    QString getTargetIdentifier(Tp::BaseConnection *connection) const;
-    uint getTargetHandle(Tp::BaseConnection *connection) const;
-};
-
-QString RequestDetails::channelType() const
-{
-    return value(TP_QT_IFACE_CHANNEL + QLatin1String(".ChannelType")).toString();
-}
-
-Tp::HandleType RequestDetails::targetHandleType() const
-{
-    QVariant result = value(TP_QT_IFACE_CHANNEL + QLatin1String(".TargetHandleType"));
-    if (result.isNull()) {
-        return Tp::HandleTypeNone;
-    }
-    return static_cast<Tp::HandleType>(result.toUInt());
-}
-
-bool RequestDetails::isRequested() const
-{
-    return value(TP_QT_IFACE_CHANNEL + QLatin1String(".Requested")).toBool();
-}
-
-QString RequestDetails::getTargetIdentifier(Tp::BaseConnection *connection) const
-{
-    if (contains(TP_QT_IFACE_CHANNEL + QLatin1String(".TargetID"))) {
-        return value(TP_QT_IFACE_CHANNEL + QLatin1String(".TargetID")).toString();
-    }
-    if (contains(TP_QT_IFACE_CHANNEL + QLatin1String(".TargetHandle"))) {
-        Tp::DBusError error;
-        const uint handle = value(TP_QT_IFACE_CHANNEL + QLatin1String(".TargetHandle")).toUInt();
-        const auto ids = connection->inspectHandles(targetHandleType(), QList<uint>({ handle }), &error);
-        if (!error.isValid() && !ids.isEmpty()) {
-            return ids.first();
-        }
-    }
-    return QString();
-}
-
-uint RequestDetails::getTargetHandle(Tp::BaseConnection *connection) const
-{
-    if (contains(TP_QT_IFACE_CHANNEL + QLatin1String(".TargetHandle"))) {
-        return value(TP_QT_IFACE_CHANNEL + QLatin1String(".TargetHandle")).toUInt();
-    }
-    if (contains(TP_QT_IFACE_CHANNEL + QLatin1String(".TargetID"))) {
-        Tp::DBusError error;
-        const QString id = value(TP_QT_IFACE_CHANNEL + QLatin1String(".TargetID")).toString();
-        const auto handles = connection->requestHandles(targetHandleType(), { id }, &error);
-        if (!error.isValid() && !handles.isEmpty()) {
-            return handles.first();
-        }
-    }
-    return 0;
 }
 
 Tp::BaseChannelPtr MatrixConnection::createChannelCB(const QVariantMap &request, Tp::DBusError *error)

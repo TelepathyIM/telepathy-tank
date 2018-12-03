@@ -7,6 +7,8 @@ set(tank_SOURCES
     protocol.hpp
     messageschannel.cpp
     messageschannel.hpp
+    requestdetails.cpp
+    requestdetails.hpp
 )
 
 if (NOT DEFINED QT_VERSION_MAJOR)
