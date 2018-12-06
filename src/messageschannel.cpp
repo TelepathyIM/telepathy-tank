@@ -88,6 +88,8 @@ MatrixMessagesChannel::MatrixMessagesChannel(MatrixConnection *connection, QMatr
                                                            /* creationTimestamp */ QDateTime());
         baseChannel->plugInterface(Tp::AbstractChannelInterfacePtr::dynamicCast(m_roomIface));
     }
+
+    connect(m_room, &QMatrixClient::Room::pendingEventChanged, this, &MatrixMessagesChannel::onPendingEventChanged);
 }
 
 void MatrixMessagesChannel::onPendingEventChanged(int pendingEventIndex)
@@ -140,7 +142,6 @@ QString MatrixMessagesChannel::sendMessageCallback(const Tp::MessagePartList &me
         }
     }
 
-    connect(m_room, &QMatrixClient::Room::pendingEventChanged, this, &MatrixMessagesChannel::onPendingEventChanged);
     QString txnId = m_room->postPlainText(content);
     return txnId;
 }
