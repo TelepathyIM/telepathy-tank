@@ -23,6 +23,7 @@
 #include <QPointer>
 
 #include <TelepathyQt/BaseChannel>
+#include <events/roommessageevent.h>
 
 class QTimer;
 
