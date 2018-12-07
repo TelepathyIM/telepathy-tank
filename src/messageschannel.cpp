@@ -119,7 +119,7 @@ void MatrixMessagesChannel::onPendingEventChanged(int pendingEventIndex)
     header[QStringLiteral("message-sender-id")] = QDBusVariant(m_targetId);
     header[QStringLiteral("message-type")]      = QDBusVariant(Tp::ChannelTextMessageTypeDeliveryReport);
     header[QStringLiteral("delivery-status")]   = QDBusVariant(tpDeliveryStatus);
-    header[QStringLiteral("delivery-token")]    = QDBusVariant(pendingEvent.event()->transactionId());
+    header[QStringLiteral("delivery-token")]    = QDBusVariant(pendingEvent.event()->id());
     partList << header;
 
     addReceivedMessage(partList);
@@ -152,14 +152,21 @@ void MatrixMessagesChannel::processMessageEvent(const QMatrixClient::RoomMessage
     qDebug().noquote() << Q_FUNC_INFO << "Process message" << doc.toJson(QJsonDocument::Indented);
     Tp::MessagePart header;
     header[QStringLiteral("message-token")] = QDBusVariant(event->id());
-    header[QStringLiteral("message-sent")]  = QDBusVariant(event->timestamp().toMSecsSinceEpoch() / 1000);
-    header[QStringLiteral("message-received")] = QDBusVariant(event->timestamp().toMSecsSinceEpoch() / 1000);
     if (event->senderId() == m_connection->matrix()->user()->id()) {
-        header[QStringLiteral("message-sender")]   = QDBusVariant(m_connection->selfHandle());
+        header[QStringLiteral("message-sender")]    = QDBusVariant(m_connection->selfHandle());
         header[QStringLiteral("message-sender-id")] = QDBusVariant(m_connection->selfID());
     } else {
-        header[QStringLiteral("message-sender")]   = QDBusVariant(m_connection->ensureContactHandle(event->senderId()));
+        header[QStringLiteral("message-sender")]    = QDBusVariant(m_connection->ensureContactHandle(event->senderId()));
         header[QStringLiteral("message-sender-id")] = QDBusVariant(event->senderId());
+    }
+    header[QStringLiteral("message-sent")]     = QDBusVariant(event->timestamp().toMSecsSinceEpoch() / 1000);
+    header[QStringLiteral("message-received")] = QDBusVariant(event->timestamp().toMSecsSinceEpoch() / 1000);
+    header[QStringLiteral("message-type")]     = QDBusVariant(Tp::ChannelTextMessageTypeNormal);
+
+    /* Redacted deleted message */
+    // https://matrix.org/docs/spec/client_server/r0.4.0.html#id259
+    if (event->isRedacted()) {
+        header[QStringLiteral("delivery-status")]   = QDBusVariant(Tp::DeliveryStatusDeleted);
     }
 
     /* Text message */
@@ -167,11 +174,10 @@ void MatrixMessagesChannel::processMessageEvent(const QMatrixClient::RoomMessage
     Tp::MessagePart text;
 
     text[QStringLiteral("content-type")] = QDBusVariant(QStringLiteral("text/plain"));
-    text[QStringLiteral("content")]      = QDBusVariant(event->plainBody());
+    text[QStringLiteral("content")]      = QDBusVariant(event->isRedacted() ? event->redactionReason() : event->plainBody());
     body << text;
 
     Tp::MessagePartList partList;
-    header[QStringLiteral("message-type")]  = QDBusVariant(Tp::ChannelTextMessageTypeNormal);
     partList << header << body;
     addReceivedMessage(partList);
 }
