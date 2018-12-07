@@ -59,7 +59,7 @@ MatrixMessagesChannel::MatrixMessagesChannel(MatrixConnection *connection, QMatr
                                                                deliveryReportingSupport);
 
     baseChannel->plugInterface(Tp::AbstractChannelInterfacePtr::dynamicCast(m_messagesIface));
-    // m_messagesIface->setSendMessageCallback(Tp::memFun(this, &MatrixMessagesChannel::sendMessage));
+    m_messagesIface->setSendMessageCallback(Tp::memFun(this, &MatrixMessagesChannel::sendMessageCallback));
 
     // m_chatStateIface = Tp::BaseChannelChatStateInterface::create();
     // m_chatStateIface->setSetChatStateCallback(Tp::memFun(this, &MatrixMessagesChannel::setChatState));
