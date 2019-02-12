@@ -62,17 +62,20 @@ class MatrixMessagesChannel : public Tp::BaseChannelTextType
 public:
     static MatrixMessagesChannelPtr create(MatrixConnection *connection, QMatrixClient::Room *room, Tp::BaseChannel *baseChannel);
 
-    QString sendMessageCallback(const Tp::MessagePartList &messageParts, uint flags, Tp::DBusError *error);
-    void processMessageEvent(const QMatrixClient::RoomMessageEvent *event);
-
-    void messageAcknowledgedCallback(const QString &messageId);
+    QString sendMessage(const Tp::MessagePartList &messageParts, uint flags, Tp::DBusError *error);
+    // void messageAcknowledged(const QString &messageId);
+    void setChatState(uint state, Tp::DBusError *error);
 
     void fetchHistory();
+    void processMessageEvent(const QMatrixClient::RoomMessageEvent *event);
 
 private:
     MatrixMessagesChannel(MatrixConnection *connection, QMatrixClient::Room *room, Tp::BaseChannel *baseChannel);
 
     void onPendingEventChanged(int pendingEventIndex);
+    void onTypingChanged();
+    void reactivateLocalTyping();
+    void sendChatStateNotification(uint state);
 
     MatrixConnection *m_connection = nullptr;
     QMatrixClient::Room *m_room = nullptr;
@@ -88,6 +91,8 @@ private:
     Tp::BaseChannelGroupInterfacePtr m_groupIface;
     Tp::BaseChannelRoomInterfacePtr m_roomIface;
     Tp::BaseChannelRoomConfigInterfacePtr m_roomConfigIface;
+
+    QTimer *m_localTypingTimer = nullptr;
 };
 
 #endif // TANK_MESSAGES_CHANNEL_HPP

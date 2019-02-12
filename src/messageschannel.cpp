@@ -30,6 +30,8 @@
 #include <connection.h>
 #include <room.h>
 #include <user.h>
+#include <csapi/typing.h>
+#include <events/typingevent.h>
 
 MatrixMessagesChannel::MatrixMessagesChannel(MatrixConnection *connection, QMatrixClient::Room *room, Tp::BaseChannel *baseChannel)
     : Tp::BaseChannelTextType(baseChannel),
@@ -59,11 +61,11 @@ MatrixMessagesChannel::MatrixMessagesChannel(MatrixConnection *connection, QMatr
                                                                deliveryReportingSupport);
 
     baseChannel->plugInterface(Tp::AbstractChannelInterfacePtr::dynamicCast(m_messagesIface));
-    m_messagesIface->setSendMessageCallback(Tp::memFun(this, &MatrixMessagesChannel::sendMessageCallback));
+    m_messagesIface->setSendMessageCallback(Tp::memFun(this, &MatrixMessagesChannel::sendMessage));
 
-    // m_chatStateIface = Tp::BaseChannelChatStateInterface::create();
-    // m_chatStateIface->setSetChatStateCallback(Tp::memFun(this, &MatrixMessagesChannel::setChatState));
-    // baseChannel->plugInterface(Tp::AbstractChannelInterfacePtr::dynamicCast(m_chatStateIface));
+    m_chatStateIface = Tp::BaseChannelChatStateInterface::create();
+    m_chatStateIface->setSetChatStateCallback(Tp::memFun(this, &MatrixMessagesChannel::setChatState));
+    baseChannel->plugInterface(Tp::AbstractChannelInterfacePtr::dynamicCast(m_chatStateIface));
 
     if (m_targetHandleType == Tp::HandleTypeRoom) {
         Tp::ChannelGroupFlags groupFlags = 0;
@@ -90,6 +92,7 @@ MatrixMessagesChannel::MatrixMessagesChannel(MatrixConnection *connection, QMatr
     }
 
     connect(m_room, &QMatrixClient::Room::pendingEventChanged, this, &MatrixMessagesChannel::onPendingEventChanged);
+    connect(m_room, &QMatrixClient::Room::typingChanged, this, &MatrixMessagesChannel::onTypingChanged);
 }
 
 void MatrixMessagesChannel::onPendingEventChanged(int pendingEventIndex)
@@ -125,12 +128,20 @@ void MatrixMessagesChannel::onPendingEventChanged(int pendingEventIndex)
     addReceivedMessage(partList);
 }
 
+void MatrixMessagesChannel::sendChatStateNotification(uint state)
+{
+    m_room->connection()->
+            callApi<QMatrixClient::SetTypingJob>
+            (QMatrixClient::BackgroundRequest,
+             m_connection->matrix()->user()->id(), m_room->id(), (state == Tp::ChannelChatStateComposing));
+}
+
 MatrixMessagesChannelPtr MatrixMessagesChannel::create(MatrixConnection *connection, QMatrixClient::Room *room, Tp::BaseChannel *baseChannel)
 {
     return MatrixMessagesChannelPtr(new MatrixMessagesChannel(connection, room, baseChannel));
 }
 
-QString MatrixMessagesChannel::sendMessageCallback(const Tp::MessagePartList &messageParts, uint flags, Tp::DBusError *error)
+QString MatrixMessagesChannel::sendMessage(const Tp::MessagePartList &messageParts, uint flags, Tp::DBusError *error)
 {
     QString content;
     for (const Tp::MessagePart &part : messageParts) {
@@ -152,29 +163,28 @@ void MatrixMessagesChannel::processMessageEvent(const QMatrixClient::RoomMessage
     qDebug().noquote() << Q_FUNC_INFO << "Process message" << doc.toJson(QJsonDocument::Indented);
     Tp::MessagePart header;
     header[QStringLiteral("message-token")] = QDBusVariant(event->id());
+    header[QStringLiteral("message-sent")] = QDBusVariant(event->timestamp().toMSecsSinceEpoch() / 1000);
+    header[QStringLiteral("message-received")] = QDBusVariant(event->timestamp().toMSecsSinceEpoch() / 1000);
+    header[QStringLiteral("message-type")] = QDBusVariant(Tp::ChannelTextMessageTypeNormal);
     if (event->senderId() == m_connection->matrix()->user()->id()) {
-        header[QStringLiteral("message-sender")]    = QDBusVariant(m_connection->selfHandle());
+        header[QStringLiteral("message-sender")] = QDBusVariant(m_connection->selfHandle());
         header[QStringLiteral("message-sender-id")] = QDBusVariant(m_connection->selfID());
     } else {
-        header[QStringLiteral("message-sender")]    = QDBusVariant(m_connection->ensureContactHandle(event->senderId()));
+        header[QStringLiteral("message-sender")] = QDBusVariant(m_connection->ensureContactHandle(event->senderId()));
         header[QStringLiteral("message-sender-id")] = QDBusVariant(event->senderId());
     }
-    header[QStringLiteral("message-sent")]     = QDBusVariant(event->timestamp().toMSecsSinceEpoch() / 1000);
-    header[QStringLiteral("message-received")] = QDBusVariant(event->timestamp().toMSecsSinceEpoch() / 1000);
-    header[QStringLiteral("message-type")]     = QDBusVariant(Tp::ChannelTextMessageTypeNormal);
 
     /* Redacted deleted message */
     // https://matrix.org/docs/spec/client_server/r0.4.0.html#id259
-    if (event->isRedacted()) {
-        header[QStringLiteral("delivery-status")]   = QDBusVariant(Tp::DeliveryStatusDeleted);
-    }
+    if (event->isRedacted())
+        header[QStringLiteral("delivery-status")] = QDBusVariant(Tp::DeliveryStatusDeleted);
 
     /* Text message */
     Tp::MessagePartList body;
     Tp::MessagePart text;
 
     text[QStringLiteral("content-type")] = QDBusVariant(QStringLiteral("text/plain"));
-    text[QStringLiteral("content")]      = QDBusVariant(event->isRedacted() ? event->redactionReason() : event->plainBody());
+    text[QStringLiteral("content")] = QDBusVariant(event->isRedacted() ? event->redactionReason() : event->plainBody());
     body << text;
 
     Tp::MessagePartList partList;
@@ -190,4 +200,46 @@ void MatrixMessagesChannel::fetchHistory()
             processMessageEvent(event);
         }
     }
+}
+
+void MatrixMessagesChannel::onTypingChanged()
+{
+    if (m_room->usersTyping().isEmpty())
+    {
+        for(auto user: m_room->users())
+        {
+            const uint handle = m_connection->ensureContactHandle(user->id());
+            m_chatStateIface->chatStateChanged(handle, Tp::ChannelChatStateActive);
+        }
+        return;
+    }
+    for(auto user: m_room->usersTyping())
+    {
+        const uint handle = m_connection->ensureContactHandle(user->id());
+        m_chatStateIface->chatStateChanged(handle, Tp::ChannelChatStateComposing);
+    }
+}
+
+void MatrixMessagesChannel::reactivateLocalTyping()
+{
+    sendChatStateNotification(Tp::ChannelChatStateComposing);
+}
+
+void MatrixMessagesChannel::setChatState(uint state, Tp::DBusError *error)
+{
+    Q_UNUSED(error);
+
+    if (!m_localTypingTimer) {
+        m_localTypingTimer = new QTimer(this);
+        constexpr int c_chatStateResendInterval = 5000;
+        m_localTypingTimer->setInterval(c_chatStateResendInterval);
+        connect(m_localTypingTimer, &QTimer::timeout, this, &MatrixMessagesChannel::reactivateLocalTyping);
+    }
+
+    if (state == Tp::ChannelChatStateComposing) {
+        m_localTypingTimer->start();
+    } else {
+        m_localTypingTimer->stop();
+    }
+    sendChatStateNotification(state);
 }
