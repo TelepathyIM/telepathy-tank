@@ -550,7 +550,7 @@ bool MatrixConnection::saveSessionData() const
     QJsonObject rootObject;
     rootObject.insert("session", sessionObject);
     rootObject.insert("format", c_sessionDataFormat);
-    QJsonDocument doc(sessionObject);
+    QJsonDocument doc(rootObject);
 
     const QByteArray data = doc.toJson(QJsonDocument::Indented);
 
