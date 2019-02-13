@@ -183,7 +183,7 @@ MatrixConnection::MatrixConnection(const QDBusConnection &dbusConnection, const 
     m_user = parameters.value(QLatin1String("user")).toString();
     m_password = parameters.value(QLatin1String("password")).toString();
     m_deviceId = parameters.value(QLatin1String("device"), QStringLiteral("HomePC")).toString();
-    m_server = parameters.value(QLatin1String("server")).toString();
+    m_server = parameters.value(QLatin1String("server"), QStringLiteral("https://matrix.org")).toString();
 
     /* Connection.Interface.Avatars */
     m_avatarsIface = Tp::BaseConnectionAvatarsInterface::create();
@@ -207,7 +207,7 @@ void MatrixConnection::doConnect(Tp::DBusError *error)
 #if Q_MATRIX_CLIENT_VERSION >= Q_MATRIX_CLIENT_VERSION_CHECK(0, 2, 0)
     m_connection = new QMatrixClient::Connection(this);
 #else
-    m_connection = new QMatrixClient::Connection(QUrl(QStringLiteral("https://matrix.org")));
+    m_connection = new QMatrixClient::Connection(QUrl(m_server));
 #endif
     connect(m_connection, &QMatrixClient::Connection::connected, this, &MatrixConnection::onConnected);
     connect(m_connection, &QMatrixClient::Connection::syncDone, this, &MatrixConnection::onSyncDone);
