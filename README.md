@@ -9,7 +9,7 @@ Tank is a Qt-based matrix connection operator for the Telepathy framework.
 * CMake 3.2 (required by TelepathyQt)
 * Qt 5.6
 * [TelepathyQt 0.9.7](https://github.com/TelepathyIM/telepathy-qt)
-* [libqmatrixclient 0.4](https://github.com/QMatrixClient/libqmatrixclient/)
+* [libqmatrixclient 0.5](https://github.com/QMatrixClient/libqmatrixclient/)
 
 Note: In order to use Tank, you need to have a complementary Telepathy Client application, such as KDE-Telepathy or Empathy.
 

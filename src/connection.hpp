@@ -26,6 +26,8 @@
 
 #include <QHash>
 
+#include "messageschannel.hpp" // MatrixMessagesChannelPtr typedef
+
 namespace QMatrixClient
 {
 
@@ -110,6 +112,9 @@ public:
 
     QMatrixClient::Connection *matrix() const { return m_connection; }
 
+public slots:
+    void onAboutToAddNewMessages(QMatrixClient::RoomEventsRange events);
+
 signals:
     void messageReceived(const QString &sender, const QString &message);
     void chatDetailsChanged(quint32 chatId, const Tp::UIntList &handles);
@@ -141,6 +146,7 @@ public:
     uint ensureHandle(QMatrixClient::Room *room);
     uint ensureContactHandle(const QString &identifier);
 
+    MatrixMessagesChannelPtr getMatrixMessagesChannelPtr(QMatrixClient::Room *room);
     void prefetchHistory(QMatrixClient::Room *room);
 
     void startMechanismWithData_authCode(const QString &mechanism, const QByteArray &data, Tp::DBusError *error);

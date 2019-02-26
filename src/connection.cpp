@@ -38,7 +38,6 @@
 #include <room.h>
 #include <settings.h>
 #include <user.h>
-#include <events/roommemberevent.h>
 
 #define Q_MATRIX_CLIENT_MAJOR_VERSION 0
 #define Q_MATRIX_CLIENT_MINOR_VERSION 1
@@ -183,7 +182,7 @@ MatrixConnection::MatrixConnection(const QDBusConnection &dbusConnection, const 
     m_user = parameters.value(QLatin1String("user")).toString();
     m_password = parameters.value(QLatin1String("password")).toString();
     m_deviceId = parameters.value(QLatin1String("device"), QStringLiteral("HomePC")).toString();
-    m_server = parameters.value(QLatin1String("server")).toString();
+    m_server = parameters.value(QLatin1String("server"), QStringLiteral("https://matrix.org")).toString();
 
     /* Connection.Interface.Avatars */
     m_avatarsIface = Tp::BaseConnectionAvatarsInterface::create();
@@ -207,7 +206,7 @@ void MatrixConnection::doConnect(Tp::DBusError *error)
 #if Q_MATRIX_CLIENT_VERSION >= Q_MATRIX_CLIENT_VERSION_CHECK(0, 2, 0)
     m_connection = new QMatrixClient::Connection(this);
 #else
-    m_connection = new QMatrixClient::Connection(QUrl(QStringLiteral("https://matrix.org")));
+    m_connection = new QMatrixClient::Connection(QUrl(m_server));
 #endif
     connect(m_connection, &QMatrixClient::Connection::connected, this, &MatrixConnection::onConnected);
     connect(m_connection, &QMatrixClient::Connection::syncDone, this, &MatrixConnection::onSyncDone);
@@ -220,6 +219,7 @@ void MatrixConnection::doConnect(Tp::DBusError *error)
     connect(m_connection, &QMatrixClient::Connection::resolveError, [](const QString &error) {
         qDebug() << "Resolve error: " << error;
     });
+    connect(m_connection, &QMatrixClient::Connection::newRoom, this, &MatrixConnection::processNewRoom);
 
     if (loadSessionData()) {
         qDebug() << Q_FUNC_INFO << "connectWithToken" << m_user << m_accessToken << m_deviceId;
@@ -457,6 +457,25 @@ uint MatrixConnection::setPresence(const QString &status, const QString &message
     return selfHandle();
 }
 
+void MatrixConnection::onAboutToAddNewMessages(QMatrixClient::RoomEventsRange events)
+{
+    for (auto &event : events) {
+        QMatrixClient::RoomMessageEvent *message = dynamic_cast<QMatrixClient::RoomMessageEvent *>(event.get());
+        if (message) {
+            QMatrixClient::Room *room = qobject_cast<QMatrixClient::Room *>(sender());
+            if (!room) {
+                continue;
+            }
+            MatrixMessagesChannelPtr textChannel = getMatrixMessagesChannelPtr(room);
+            if (!textChannel) {
+                qDebug() << Q_FUNC_INFO << "Error, channel is not a TextChannel?";
+                continue;
+            }
+            textChannel->processMessageEvent(message);
+        }
+    }
+}
+
 void MatrixConnection::onConnected()
 {
     m_userId = m_connection->userId();
@@ -470,26 +489,19 @@ void MatrixConnection::onConnected()
     setStatus(Tp::ConnectionStatusConnected, Tp::ConnectionStatusReasonRequested);
     m_contactListIface->setContactListState(Tp::ContactListStateWaiting);
 
-    m_connection->sync();
-
     qDebug() << Q_FUNC_INFO;
     saveSessionData();
+
+    m_connection->syncLoop();
 }
 
 void MatrixConnection::onSyncDone()
 {
-    connect(m_connection, &QMatrixClient::Connection::newRoom, this, &MatrixConnection::processNewRoom);
     qDebug() << Q_FUNC_INFO;
     const auto rooms = m_connection->roomMap();
-    qDebug() << rooms;
-//    for (const QMatrixClient::Room *room : rooms) {
-//        qDebug() << room->toJson();
-//    }
     for (QMatrixClient::Room *room : rooms) {
         processNewRoom(room);
-//        connect(root, &QMatrixClient::Room::addedMessages)
     }
-
     m_contactListIface->setContactListState(Tp::ContactListStateSuccess);
 }
 
@@ -550,7 +562,7 @@ bool MatrixConnection::saveSessionData() const
     QJsonObject rootObject;
     rootObject.insert("session", sessionObject);
     rootObject.insert("format", c_sessionDataFormat);
-    QJsonDocument doc(sessionObject);
+    QJsonDocument doc(rootObject);
 
     const QByteArray data = doc.toJson(QJsonDocument::Indented);
 
@@ -582,6 +594,9 @@ void MatrixConnection::processNewRoom(QMatrixClient::Room *room)
     } else {
         ensureHandle(room);
     }
+    connect(room, &QMatrixClient::Room::aboutToAddNewMessages,
+            this, &MatrixConnection::onAboutToAddNewMessages,
+            Qt::UniqueConnection);
 }
 
 uint MatrixConnection::ensureDirectContact(QMatrixClient::User *user, QMatrixClient::Room *room)
@@ -592,18 +607,16 @@ uint MatrixConnection::ensureDirectContact(QMatrixClient::User *user, QMatrixCli
     return handle;
 }
 
-void MatrixConnection::prefetchHistory(QMatrixClient::Room *room)
-{
-    if (room->messageEvents().begin() == room->messageEvents().end()) {
-        return;
-    }
 
+MatrixMessagesChannelPtr MatrixConnection::getMatrixMessagesChannelPtr(QMatrixClient::Room *room)
+{
+    MatrixMessagesChannelPtr textChannel;
     uint handleType = room->isDirectChat() ? Tp::HandleTypeContact : Tp::HandleTypeRoom;
     uint handle = room->isDirectChat() ? getDirectContactHandle(room) : getRoomHandle(room);
 
     if (!handle) {
         qWarning() << Q_FUNC_INFO << "Unknown room" << room->id();
-        return;
+        return textChannel;
     }
 
     bool yoursChannel;
@@ -618,10 +631,20 @@ void MatrixConnection::prefetchHistory(QMatrixClient::Room *room)
 
     if (error.isValid()) {
         qWarning() << "ensureChannel failed:" << error.name() << " " << error.message();
+        return textChannel;
+    }
+
+    textChannel = MatrixMessagesChannelPtr::dynamicCast(channel->interface(TP_QT_IFACE_CHANNEL_TYPE_TEXT));
+    return textChannel;
+}
+
+void MatrixConnection::prefetchHistory(QMatrixClient::Room *room)
+{
+    if (room->messageEvents().begin() == room->messageEvents().end()) {
         return;
     }
 
-    MatrixMessagesChannelPtr textChannel = MatrixMessagesChannelPtr::dynamicCast(channel->interface(TP_QT_IFACE_CHANNEL_TYPE_TEXT));
+    MatrixMessagesChannelPtr textChannel = getMatrixMessagesChannelPtr(room);
 
     if (!textChannel) {
         qDebug() << "Error, channel is not a TextChannel?";
