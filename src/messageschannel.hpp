@@ -72,7 +72,9 @@ public:
 private:
     MatrixMessagesChannel(MatrixConnection *connection, QMatrixClient::Room *room, Tp::BaseChannel *baseChannel);
 
+    void sendDeliveryReport(Tp::DeliveryStatus tpDeliveryStatus, const QString &deliveryToken);
     void onPendingEventChanged(int pendingEventIndex);
+    void onReadMarkerForUserMoved(QMatrixClient::User* user, QString fromEventId, QString toEventId);
     void onTypingChanged();
     void reactivateLocalTyping();
     void sendChatStateNotification(uint state);

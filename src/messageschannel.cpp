@@ -93,6 +93,22 @@ MatrixMessagesChannel::MatrixMessagesChannel(MatrixConnection *connection, QMatr
 
     connect(m_room, &QMatrixClient::Room::pendingEventChanged, this, &MatrixMessagesChannel::onPendingEventChanged);
     connect(m_room, &QMatrixClient::Room::typingChanged, this, &MatrixMessagesChannel::onTypingChanged);
+    connect(m_room, &QMatrixClient::Room::readMarkerForUserMoved, this, &MatrixMessagesChannel::onReadMarkerForUserMoved);
+}
+
+void MatrixMessagesChannel::sendDeliveryReport(Tp::DeliveryStatus tpDeliveryStatus, const QString &deliveryToken)
+{
+    Tp::MessagePartList partList;
+
+    Tp::MessagePart header;
+    header[QStringLiteral("message-sender")]    = QDBusVariant(m_targetHandle);
+    header[QStringLiteral("message-sender-id")] = QDBusVariant(m_targetId);
+    header[QStringLiteral("message-type")]      = QDBusVariant(Tp::ChannelTextMessageTypeDeliveryReport);
+    header[QStringLiteral("delivery-status")]   = QDBusVariant(tpDeliveryStatus);
+    header[QStringLiteral("delivery-token")]    = QDBusVariant(deliveryToken);
+    partList << header;
+
+    addReceivedMessage(partList);
 }
 
 void MatrixMessagesChannel::onPendingEventChanged(int pendingEventIndex)
@@ -115,17 +131,7 @@ void MatrixMessagesChannel::onPendingEventChanged(int pendingEventIndex)
         break;
     }
 
-    Tp::MessagePartList partList;
-
-    Tp::MessagePart header;
-    header[QStringLiteral("message-sender")]    = QDBusVariant(m_targetHandle);
-    header[QStringLiteral("message-sender-id")] = QDBusVariant(m_targetId);
-    header[QStringLiteral("message-type")]      = QDBusVariant(Tp::ChannelTextMessageTypeDeliveryReport);
-    header[QStringLiteral("delivery-status")]   = QDBusVariant(tpDeliveryStatus);
-    header[QStringLiteral("delivery-token")]    = QDBusVariant(pendingEvent.event()->id());
-    partList << header;
-
-    addReceivedMessage(partList);
+    sendDeliveryReport(tpDeliveryStatus, pendingEvent.event()->id());
 }
 
 void MatrixMessagesChannel::sendChatStateNotification(uint state)
@@ -179,6 +185,13 @@ void MatrixMessagesChannel::processMessageEvent(const QMatrixClient::RoomMessage
     if (event->isRedacted())
         header[QStringLiteral("delivery-status")] = QDBusVariant(Tp::DeliveryStatusDeleted);
 
+    /* Read markers */
+    QList<QMatrixClient::User*> usersAtEventId = m_room->usersAtEventId(event->id());
+    if ((usersAtEventId.contains(m_connection->matrix()->user()) && usersAtEventId.count()>1) ||
+        (!usersAtEventId.contains(m_connection->matrix()->user()) && usersAtEventId.count()>0)) {
+        header[QStringLiteral("delivery-status")] = QDBusVariant(Tp::DeliveryStatusRead);
+    }
+
     /* Text message */
     Tp::MessagePartList body;
     Tp::MessagePart text;
@@ -220,6 +233,18 @@ void MatrixMessagesChannel::onTypingChanged()
     }
 }
 
+void MatrixMessagesChannel::onReadMarkerForUserMoved(QMatrixClient::User* user, QString fromEventId, QString toEventId)
+{
+    Q_UNUSED(user);
+    QStringList tokens;
+    for (auto eventIt = m_room->findInTimeline(fromEventId); eventIt < m_room->findInTimeline(toEventId); ++eventIt) {
+        sendDeliveryReport(Tp::DeliveryStatusRead, eventIt->event()->id());
+        tokens.append(eventIt->event()->id());
+    }
+    Tp::DBusError error;
+    acknowledgePendingMessages(tokens,&error);
+}
+
 void MatrixMessagesChannel::reactivateLocalTyping()
 {
     sendChatStateNotification(Tp::ChannelChatStateComposing);
@@ -241,5 +266,8 @@ void MatrixMessagesChannel::setChatState(uint state, Tp::DBusError *error)
     } else {
         m_localTypingTimer->stop();
     }
+
+    m_room->markAllMessagesAsRead();
+
     sendChatStateNotification(state);
 }
