@@ -217,17 +217,14 @@ void MatrixMessagesChannel::fetchHistory()
 
 void MatrixMessagesChannel::onTypingChanged()
 {
-    if (m_room->usersTyping().isEmpty())
-    {
-        for(auto user: m_room->users())
-        {
+    if (m_room->usersTyping().isEmpty()) {
+        for (auto user: m_room->users()) {
             const uint handle = m_connection->ensureContactHandle(user->id());
             m_chatStateIface->chatStateChanged(handle, Tp::ChannelChatStateActive);
         }
         return;
     }
-    for(auto user: m_room->usersTyping())
-    {
+    for (auto user: m_room->usersTyping()) {
         const uint handle = m_connection->ensureContactHandle(user->id());
         m_chatStateIface->chatStateChanged(handle, Tp::ChannelChatStateComposing);
     }
