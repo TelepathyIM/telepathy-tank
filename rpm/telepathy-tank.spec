@@ -18,7 +18,7 @@ BuildRequires: pkgconfig(TelepathyQt5Service) >= 0.9.7
 # We don't use Farstream directly and it seems to be needed because of invalid TelepathyQt dependencies
 BuildRequires: pkgconfig(TelepathyQt5Farstream) >= 0.9.7
 BuildRequires: cmake >= 3.2
-BuildRequires: libqmatrixclient-qt5-devel >= 0.4
+BuildRequires: libqmatrixclient-qt5-devel >= 0.5
 
 BuildRequires: opt-gcc6
 
