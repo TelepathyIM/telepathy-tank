@@ -33,7 +33,7 @@
 #include <QFile>
 #include <QTimer>
 
-// QMatrixClient
+// Quotient
 #include <connection.h>
 #include <room.h>
 #include <settings.h>
@@ -203,23 +203,19 @@ void MatrixConnection::doConnect(Tp::DBusError *error)
     qDebug() << Q_FUNC_INFO << m_user << m_password << m_deviceId;
     setStatus(Tp::ConnectionStatusConnecting, Tp::ConnectionStatusReasonRequested);
 
-#if Q_MATRIX_CLIENT_VERSION >= Q_MATRIX_CLIENT_VERSION_CHECK(0, 2, 0)
-    m_connection = new QMatrixClient::Connection(this);
-#else
-    m_connection = new QMatrixClient::Connection(QUrl(m_server));
-#endif
-    connect(m_connection, &QMatrixClient::Connection::connected, this, &MatrixConnection::onConnected);
-    connect(m_connection, &QMatrixClient::Connection::syncDone, this, &MatrixConnection::onSyncDone);
-    connect(m_connection, &QMatrixClient::Connection::loginError, [](const QString &error) {
+    m_connection = new Quotient::Connection(QUrl(m_server));
+    connect(m_connection, &Quotient::Connection::connected, this, &MatrixConnection::onConnected);
+    connect(m_connection, &Quotient::Connection::syncDone, this, &MatrixConnection::onSyncDone);
+    connect(m_connection, &Quotient::Connection::loginError, [](const QString &error) {
         qDebug() << "Login error: " << error;
     });
-//    connect(m_connection, &QMatrixClient::Connection::networkError, [](size_t nextAttempt, int inMilliseconds) {
+//    connect(m_connection, &Quotient::Connection::networkError, [](size_t nextAttempt, int inMilliseconds) {
 //        qDebug() << "networkError: " << nextAttempt << "millis" << inMilliseconds;
 //    });
-    connect(m_connection, &QMatrixClient::Connection::resolveError, [](const QString &error) {
+    connect(m_connection, &Quotient::Connection::resolveError, [](const QString &error) {
         qDebug() << "Resolve error: " << error;
     });
-    connect(m_connection, &QMatrixClient::Connection::newRoom, this, &MatrixConnection::processNewRoom);
+    connect(m_connection, &Quotient::Connection::newRoom, this, &MatrixConnection::processNewRoom);
 
     if (loadSessionData()) {
         qDebug() << Q_FUNC_INFO << "connectWithToken" << m_user << m_accessToken << m_deviceId;
@@ -328,7 +324,7 @@ Tp::BaseChannelPtr MatrixConnection::createChannelCB(const QVariantMap &request,
         return Tp::BaseChannelPtr();
     }
 
-    QMatrixClient::Room *targetRoom = nullptr;
+    Quotient::Room *targetRoom = nullptr;
     if (targetHandleType == Tp::HandleTypeContact) {
         DirectContact contact = getDirectContact(targetHandle);
         if (!contact.isValid()) {
@@ -373,7 +369,7 @@ Tp::ContactAttributesMap MatrixConnection::getContactAttributes(const Tp::UIntLi
     Tp::ContactAttributesMap contactAttributes;
 
     for (auto handle : handles) {
-        QMatrixClient::User *user = getUser(handle);
+        Quotient::User *user = getUser(handle);
         if (!user) {
             qWarning() << Q_FUNC_INFO << "No user for handle" << handle;
             continue;
@@ -429,7 +425,7 @@ Tp::AliasMap MatrixConnection::getAliases(const Tp::UIntList &contacts, Tp::DBus
 
 QString MatrixConnection::getContactAlias(uint handle) const
 {
-    const QMatrixClient::User *user = getUser(handle);
+    const Quotient::User *user = getUser(handle);
     if (!user) {
         return QString();
     }
@@ -457,12 +453,12 @@ uint MatrixConnection::setPresence(const QString &status, const QString &message
     return selfHandle();
 }
 
-void MatrixConnection::onAboutToAddNewMessages(QMatrixClient::RoomEventsRange events)
+void MatrixConnection::onAboutToAddNewMessages(Quotient::RoomEventsRange events)
 {
     for (auto &event : events) {
-        QMatrixClient::RoomMessageEvent *message = dynamic_cast<QMatrixClient::RoomMessageEvent *>(event.get());
+        Quotient::RoomMessageEvent *message = dynamic_cast<Quotient::RoomMessageEvent *>(event.get());
         if (message) {
-            QMatrixClient::Room *room = qobject_cast<QMatrixClient::Room *>(sender());
+            Quotient::Room *room = qobject_cast<Quotient::Room *>(sender());
             if (!room) {
                 continue;
             }
@@ -499,13 +495,13 @@ void MatrixConnection::onSyncDone()
 {
     qDebug() << Q_FUNC_INFO;
     const auto rooms = m_connection->roomMap();
-    for (QMatrixClient::Room *room : rooms) {
+    for (Quotient::Room *room : rooms) {
         processNewRoom(room);
     }
     m_contactListIface->setContactListState(Tp::ContactListStateSuccess);
 }
 
-void MatrixConnection::onUserAvatarChanged(QMatrixClient::User *user)
+void MatrixConnection::onUserAvatarChanged(Quotient::User *user)
 {
     QByteArray outData;
     QBuffer output(&outData);
@@ -578,14 +574,14 @@ bool MatrixConnection::saveSessionData() const
     return secretFile.write(data) == data.size();
 }
 
-void MatrixConnection::processNewRoom(QMatrixClient::Room *room)
+void MatrixConnection::processNewRoom(Quotient::Room *room)
 {
     qDebug() << Q_FUNC_INFO << room;
     qDebug() << room->displayName() << room->topic();
     qDebug() << room->memberNames();
     if (room->isDirectChat()) {
         // Single user room
-        for (QMatrixClient::User *user : room->users()) {
+        for (Quotient::User *user : room->users()) {
             if (user == room->localUser()) {
                 continue;
             }
@@ -594,12 +590,12 @@ void MatrixConnection::processNewRoom(QMatrixClient::Room *room)
     } else {
         ensureHandle(room);
     }
-    connect(room, &QMatrixClient::Room::aboutToAddNewMessages,
+    connect(room, &Quotient::Room::aboutToAddNewMessages,
             this, &MatrixConnection::onAboutToAddNewMessages,
             Qt::UniqueConnection);
 }
 
-uint MatrixConnection::ensureDirectContact(QMatrixClient::User *user, QMatrixClient::Room *room)
+uint MatrixConnection::ensureDirectContact(Quotient::User *user, Quotient::Room *room)
 {
     qDebug() << Q_FUNC_INFO << user->id() << user->displayname();
     const uint handle = ensureHandle(user);
@@ -608,7 +604,7 @@ uint MatrixConnection::ensureDirectContact(QMatrixClient::User *user, QMatrixCli
 }
 
 
-MatrixMessagesChannelPtr MatrixConnection::getMatrixMessagesChannelPtr(QMatrixClient::Room *room)
+MatrixMessagesChannelPtr MatrixConnection::getMatrixMessagesChannelPtr(Quotient::Room *room)
 {
     MatrixMessagesChannelPtr textChannel;
     uint handleType = room->isDirectChat() ? Tp::HandleTypeContact : Tp::HandleTypeRoom;
@@ -638,7 +634,7 @@ MatrixMessagesChannelPtr MatrixConnection::getMatrixMessagesChannelPtr(QMatrixCl
     return textChannel;
 }
 
-void MatrixConnection::prefetchHistory(QMatrixClient::Room *room)
+void MatrixConnection::prefetchHistory(Quotient::Room *room)
 {
     if (room->messageEvents().begin() == room->messageEvents().end()) {
         return;
@@ -653,7 +649,7 @@ void MatrixConnection::prefetchHistory(QMatrixClient::Room *room)
     textChannel->fetchHistory();
 }
 
-QMatrixClient::User *MatrixConnection::getUser(uint handle) const
+Quotient::User *MatrixConnection::getUser(uint handle) const
 {
     if (handle == 0 || handle > static_cast<uint>(m_contactIds.count())) {
         qWarning() << Q_FUNC_INFO << "Invalid handle";
@@ -666,7 +662,7 @@ QMatrixClient::User *MatrixConnection::getUser(uint handle) const
     return m_connection->user(id);
 }
 
-QMatrixClient::User *MatrixConnection::getUser(const QString &id) const
+Quotient::User *MatrixConnection::getUser(const QString &id) const
 {
     if (id == selfID()) {
         return m_connection->user();
@@ -679,7 +675,7 @@ DirectContact MatrixConnection::getDirectContact(uint contactHandle) const
     return m_directContacts.value(contactHandle);
 }
 
-QMatrixClient::Room *MatrixConnection::getRoom(uint handle) const
+Quotient::Room *MatrixConnection::getRoom(uint handle) const
 {
     if (handle == 0 || handle > static_cast<uint>(m_roomIds.count())) {
         qWarning() << Q_FUNC_INFO << "Invalid handle";
@@ -689,12 +685,12 @@ QMatrixClient::Room *MatrixConnection::getRoom(uint handle) const
     return m_connection->room(id);
 }
 
-uint MatrixConnection::getContactHandle(QMatrixClient::User *user)
+uint MatrixConnection::getContactHandle(Quotient::User *user)
 {
     return m_contactIds.indexOf(user->id()) + 1;
 }
 
-uint MatrixConnection::getDirectContactHandle(QMatrixClient::Room *room)
+uint MatrixConnection::getDirectContactHandle(Quotient::Room *room)
 {
     for (uint handle : m_directContacts.keys()) {
         if (m_directContacts.value(handle).room == room) {
@@ -704,12 +700,12 @@ uint MatrixConnection::getDirectContactHandle(QMatrixClient::Room *room)
     return 0;
 }
 
-uint MatrixConnection::getRoomHandle(QMatrixClient::Room *room)
+uint MatrixConnection::getRoomHandle(Quotient::Room *room)
 {
     return m_roomIds.indexOf(room->id()) + 1;
 }
 
-uint MatrixConnection::ensureHandle(QMatrixClient::User *user)
+uint MatrixConnection::ensureHandle(Quotient::User *user)
 {
     uint index = getContactHandle(user);
     if (index != 0) {
@@ -719,7 +715,7 @@ uint MatrixConnection::ensureHandle(QMatrixClient::User *user)
     return m_contactIds.count();
 }
 
-uint MatrixConnection::ensureHandle(QMatrixClient::Room *room)
+uint MatrixConnection::ensureHandle(Quotient::Room *room)
 {
     uint index = getRoomHandle(room);
     if (index != 0) {
@@ -752,7 +748,7 @@ Tp::AvatarTokenMap MatrixConnection::getKnownAvatarTokens(const Tp::UIntList &ha
     }
     Tp::AvatarTokenMap result;
     for (uint handle : handles) {
-        const QMatrixClient::User *user = getUser(handle);
+        const Quotient::User *user = getUser(handle);
         if (user && user->avatarUrl().isValid()) {
             result.insert(handle, user->avatarUrl().toString());
         }
@@ -764,11 +760,11 @@ void MatrixConnection::requestAvatarsImpl(const Tp::UIntList &handles)
 {
     qDebug() << Q_FUNC_INFO << handles;
     for (auto handle : handles) {
-        QMatrixClient::User *user = getUser(handle);
+        Quotient::User *user = getUser(handle);
         if (!user) {
             continue;
         }
-        connect(user, &QMatrixClient::User::avatarChanged, this, &MatrixConnection::onUserAvatarChanged);
+        connect(user, &Quotient::User::avatarChanged, this, &MatrixConnection::onUserAvatarChanged);
         onUserAvatarChanged(user);
     }
 }

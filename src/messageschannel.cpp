@@ -26,14 +26,14 @@
 #include <TelepathyQt/Types>
 #include <QJsonDocument>
 
-// QMatrixClient
+// Quotient
 #include <connection.h>
 #include <room.h>
 #include <user.h>
 #include <csapi/typing.h>
 #include <events/typingevent.h>
 
-MatrixMessagesChannel::MatrixMessagesChannel(MatrixConnection *connection, QMatrixClient::Room *room, Tp::BaseChannel *baseChannel)
+MatrixMessagesChannel::MatrixMessagesChannel(MatrixConnection *connection, Quotient::Room *room, Tp::BaseChannel *baseChannel)
     : Tp::BaseChannelTextType(baseChannel),
       m_connection(connection),
       m_room(room),
@@ -77,7 +77,7 @@ MatrixMessagesChannel::MatrixMessagesChannel(MatrixConnection *connection, QMatr
         // We have to plug the iface before use set members
         Tp::UIntList members;
         members.reserve(m_room->users().count());
-        for (QMatrixClient::User *member : m_room->users()) {
+        for (Quotient::User *member : m_room->users()) {
             members.append(m_connection->ensureHandle(member));
         }
         m_groupIface->setMembers(members, {});
@@ -91,8 +91,8 @@ MatrixMessagesChannel::MatrixMessagesChannel(MatrixConnection *connection, QMatr
         baseChannel->plugInterface(Tp::AbstractChannelInterfacePtr::dynamicCast(m_roomIface));
     }
 
-    connect(m_room, &QMatrixClient::Room::pendingEventChanged, this, &MatrixMessagesChannel::onPendingEventChanged);
-    connect(m_room, &QMatrixClient::Room::typingChanged, this, &MatrixMessagesChannel::onTypingChanged);
+    connect(m_room, &Quotient::Room::pendingEventChanged, this, &MatrixMessagesChannel::onPendingEventChanged);
+    connect(m_room, &Quotient::Room::typingChanged, this, &MatrixMessagesChannel::onTypingChanged);
 }
 
 void MatrixMessagesChannel::onPendingEventChanged(int pendingEventIndex)
@@ -101,13 +101,13 @@ void MatrixMessagesChannel::onPendingEventChanged(int pendingEventIndex)
     // https://telepathy.freedesktop.org/spec/Channel_Interface_Messages.html#Enum:Delivery_Status
     // https://matrix.org/docs/spec/client_server/r0.4.0.html#put-matrix-client-r0-rooms-roomid-send-eventtype-txnid
 
-    const QMatrixClient::PendingEventItem &pendingEvent = m_room->pendingEvents().at(pendingEventIndex);
+    const Quotient::PendingEventItem &pendingEvent = m_room->pendingEvents().at(pendingEventIndex);
     Tp::DeliveryStatus tpDeliveryStatus;
     switch (pendingEvent.deliveryStatus()) {
-    case QMatrixClient::EventStatus::ReachedServer:
+    case Quotient::EventStatus::ReachedServer:
         tpDeliveryStatus = Tp::DeliveryStatusAccepted;
         break;
-    case QMatrixClient::EventStatus::SendingFailed:
+    case Quotient::EventStatus::SendingFailed:
         tpDeliveryStatus = Tp::DeliveryStatusTemporarilyFailed;
         break;
     default:
@@ -131,12 +131,12 @@ void MatrixMessagesChannel::onPendingEventChanged(int pendingEventIndex)
 void MatrixMessagesChannel::sendChatStateNotification(uint state)
 {
     m_room->connection()->
-            callApi<QMatrixClient::SetTypingJob>
-            (QMatrixClient::BackgroundRequest,
+            callApi<Quotient::SetTypingJob>
+            (Quotient::BackgroundRequest,
              m_connection->matrix()->user()->id(), m_room->id(), (state == Tp::ChannelChatStateComposing));
 }
 
-MatrixMessagesChannelPtr MatrixMessagesChannel::create(MatrixConnection *connection, QMatrixClient::Room *room, Tp::BaseChannel *baseChannel)
+MatrixMessagesChannelPtr MatrixMessagesChannel::create(MatrixConnection *connection, Quotient::Room *room, Tp::BaseChannel *baseChannel)
 {
     return MatrixMessagesChannelPtr(new MatrixMessagesChannel(connection, room, baseChannel));
 }
@@ -157,7 +157,7 @@ QString MatrixMessagesChannel::sendMessage(const Tp::MessagePartList &messagePar
     return txnId;
 }
 
-void MatrixMessagesChannel::processMessageEvent(const QMatrixClient::RoomMessageEvent *event)
+void MatrixMessagesChannel::processMessageEvent(const Quotient::RoomMessageEvent *event)
 {
     QJsonDocument doc(event->originalJsonObject());
     qDebug().noquote() << Q_FUNC_INFO << "Process message" << doc.toJson(QJsonDocument::Indented);
@@ -195,7 +195,7 @@ void MatrixMessagesChannel::processMessageEvent(const QMatrixClient::RoomMessage
 void MatrixMessagesChannel::fetchHistory()
 {
     for (auto eventIt = m_room->messageEvents().begin(); eventIt < m_room->messageEvents().end(); ++eventIt) {
-        const QMatrixClient::RoomMessageEvent *event = eventIt->viewAs<QMatrixClient::RoomMessageEvent>();
+        const Quotient::RoomMessageEvent *event = eventIt->viewAs<Quotient::RoomMessageEvent>();
         if (event) {
             processMessageEvent(event);
         }

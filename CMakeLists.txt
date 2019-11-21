@@ -8,9 +8,9 @@ option(PEDANTIC_BUILD "Enable all kind of compiler checks" FALSE)
 find_package(TelepathyQt5 0.9.6 REQUIRED)
 find_package(TelepathyQt5Service 0.9.6 REQUIRED)
 
-# Use the follow line to specify the path to QMatrixClient
-# set(QMatrixClient_DIR "/usr/local/lib/cmake/QMatrixClient/")
-find_package(QMatrixClient 0.5 REQUIRED)
+# Use the follow line to specify the path to Quotient
+# set(Quotient_DIR "/usr/local/lib/cmake/Quotient/")
+find_package(Quotient 0.6 REQUIRED)
 
 find_package(Qt5 REQUIRED COMPONENTS Core Gui DBus Xml Network Multimedia)
 
@@ -32,6 +32,6 @@ endif()
 message(STATUS "telepathy-tank configuration:")
 message(STATUS "  Compiler: ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
 message(STATUS "  Qt: ${Qt5_VERSION} at ${_qt5Core_install_prefix}")
-message(STATUS "  QMatrixClient: ${QMatrixClient_VERSION} at ${QMatrixClient_DIR}")
+message(STATUS "  Quotient: ${Quotient_VERSION} at ${Quotient_DIR}")
 
 add_subdirectory(src)

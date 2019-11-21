@@ -28,7 +28,7 @@
 
 #include "messageschannel.hpp" // MatrixMessagesChannelPtr typedef
 
-namespace QMatrixClient
+namespace Quotient
 {
 
 class Room;
@@ -49,19 +49,19 @@ class DownloadFileJob;
 
 class Connection;
 
-} // QMatrixClient
+} // Quotient
 
 struct DirectContact {
     DirectContact() = default;
     DirectContact(const DirectContact &contact) = default;
-    DirectContact(QMatrixClient::User *u, QMatrixClient::Room *r = nullptr)
+    DirectContact(Quotient::User *u, Quotient::Room *r = nullptr)
         : user(u),
           room(r)
     {
     }
     bool isValid() const { return user && room; }
-    QMatrixClient::User *user = nullptr;
-    QMatrixClient::Room *room = nullptr;
+    Quotient::User *user = nullptr;
+    Quotient::Room *room = nullptr;
 };
 
 class MatrixConnection : public Tp::BaseConnection
@@ -110,10 +110,10 @@ public:
     Tp::SimplePresence getPresence(uint handle);
     uint setPresence(const QString &status, const QString &message, Tp::DBusError *error);
 
-    QMatrixClient::Connection *matrix() const { return m_connection; }
+    Quotient::Connection *matrix() const { return m_connection; }
 
 public slots:
-    void onAboutToAddNewMessages(QMatrixClient::RoomEventsRange events);
+    void onAboutToAddNewMessages(Quotient::RoomEventsRange events);
 
 signals:
     void messageReceived(const QString &sender, const QString &message);
@@ -125,29 +125,29 @@ protected:
 protected slots:
     void onConnected();
     void onSyncDone();
-    void onUserAvatarChanged(QMatrixClient::User *user);
+    void onUserAvatarChanged(Quotient::User *user);
 
 public:
     bool loadSessionData();
     bool saveSessionData() const;
 
-    void processNewRoom(QMatrixClient::Room *room);
-    uint ensureDirectContact(QMatrixClient::User *user, QMatrixClient::Room *room);
+    void processNewRoom(Quotient::Room *room);
+    uint ensureDirectContact(Quotient::User *user, Quotient::Room *room);
 
-    QMatrixClient::User *getUser(uint handle) const;
-    QMatrixClient::User *getUser(const QString &id) const;
+    Quotient::User *getUser(uint handle) const;
+    Quotient::User *getUser(const QString &id) const;
     DirectContact getDirectContact(uint contactHandle) const;
-    QMatrixClient::Room *getRoom(uint handle) const;
-    uint getContactHandle(QMatrixClient::User *user);
-    uint getDirectContactHandle(QMatrixClient::Room *room);
-    uint getRoomHandle(QMatrixClient::Room *room);
+    Quotient::Room *getRoom(uint handle) const;
+    uint getContactHandle(Quotient::User *user);
+    uint getDirectContactHandle(Quotient::Room *room);
+    uint getRoomHandle(Quotient::Room *room);
 
-    uint ensureHandle(QMatrixClient::User *user);
-    uint ensureHandle(QMatrixClient::Room *room);
+    uint ensureHandle(Quotient::User *user);
+    uint ensureHandle(Quotient::Room *room);
     uint ensureContactHandle(const QString &identifier);
 
-    MatrixMessagesChannelPtr getMatrixMessagesChannelPtr(QMatrixClient::Room *room);
-    void prefetchHistory(QMatrixClient::Room *room);
+    MatrixMessagesChannelPtr getMatrixMessagesChannelPtr(Quotient::Room *room);
+    void prefetchHistory(Quotient::Room *room);
 
     void startMechanismWithData_authCode(const QString &mechanism, const QByteArray &data, Tp::DBusError *error);
     void startMechanismWithData_password(const QString &mechanism, const QByteArray &data, Tp::DBusError *error);
@@ -167,7 +167,7 @@ public:
     Tp::BaseConnectionRequestsInterfacePtr m_requestsIface;
     Tp::BaseChannelSASLAuthenticationInterfacePtr saslIface_password;
 
-    QMatrixClient::Connection *m_connection = nullptr;
+    Quotient::Connection *m_connection = nullptr;
     QHash<uint, DirectContact> m_directContacts; // Handle to contact, also known as contactlist or roster in other IM
     QStringList m_contactIds;
     QStringList m_roomIds;

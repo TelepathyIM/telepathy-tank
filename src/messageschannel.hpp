@@ -30,7 +30,7 @@ class QTimer;
 class MatrixMessagesChannel;
 class MatrixConnection;
 
-namespace QMatrixClient
+namespace Quotient
 {
 // TODO: Cleanup
 class Room;
@@ -52,7 +52,7 @@ class DownloadFileJob;
 
 class Connection;
 
-} // QMatrixClient
+} // Quotient
 
 typedef Tp::SharedPtr<MatrixMessagesChannel> MatrixMessagesChannelPtr;
 
@@ -60,17 +60,17 @@ class MatrixMessagesChannel : public Tp::BaseChannelTextType
 {
     Q_OBJECT
 public:
-    static MatrixMessagesChannelPtr create(MatrixConnection *connection, QMatrixClient::Room *room, Tp::BaseChannel *baseChannel);
+    static MatrixMessagesChannelPtr create(MatrixConnection *connection, Quotient::Room *room, Tp::BaseChannel *baseChannel);
 
     QString sendMessage(const Tp::MessagePartList &messageParts, uint flags, Tp::DBusError *error);
     // void messageAcknowledged(const QString &messageId);
     void setChatState(uint state, Tp::DBusError *error);
 
     void fetchHistory();
-    void processMessageEvent(const QMatrixClient::RoomMessageEvent *event);
+    void processMessageEvent(const Quotient::RoomMessageEvent *event);
 
 private:
-    MatrixMessagesChannel(MatrixConnection *connection, QMatrixClient::Room *room, Tp::BaseChannel *baseChannel);
+    MatrixMessagesChannel(MatrixConnection *connection, Quotient::Room *room, Tp::BaseChannel *baseChannel);
 
     void onPendingEventChanged(int pendingEventIndex);
     void onTypingChanged();
@@ -78,7 +78,7 @@ private:
     void sendChatStateNotification(uint state);
 
     MatrixConnection *m_connection = nullptr;
-    QMatrixClient::Room *m_room = nullptr;
+    Quotient::Room *m_room = nullptr;
 
     uint m_targetHandle;
     uint m_targetHandleType;

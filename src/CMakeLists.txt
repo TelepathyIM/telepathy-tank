@@ -23,7 +23,7 @@ endif()
 
 target_compile_features(telepathy-tank PRIVATE cxx_std_11)
 
-find_package(QMatrixClient REQUIRED)
+find_package(Quotient REQUIRED)
 
 target_include_directories(telepathy-tank PRIVATE
     ${TELEPATHY_QT5_INCLUDE_DIR}
@@ -35,7 +35,7 @@ target_link_libraries(telepathy-tank
     Qt5::Network
     telepathy-qt${QT_VERSION_MAJOR}
     telepathy-qt${QT_VERSION_MAJOR}-service
-    QMatrixClient
+    Quotient
 )
 
 configure_file(dbus-service.in org.freedesktop.Telepathy.ConnectionManager.tank.service)
