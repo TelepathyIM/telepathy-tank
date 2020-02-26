@@ -342,8 +342,11 @@ Tp::BaseChannelPtr MatrixConnection::createChannelCB(const QVariantMap &request,
     baseChannel->setRequested(details.isRequested());
 
     if (details.channelType() == TP_QT_IFACE_CHANNEL_TYPE_TEXT) {
-        MatrixMessagesChannelPtr messagesChannel = MatrixMessagesChannel::create(this, targetRoom, baseChannel.data());
-        baseChannel->plugInterface(Tp::AbstractChannelInterfacePtr::dynamicCast(messagesChannel));
+        qDebug() << Q_FUNC_INFO << "creating channel for the room:" << targetRoom;
+        if (targetRoom) {
+            MatrixMessagesChannelPtr messagesChannel = MatrixMessagesChannel::create(this, targetRoom, baseChannel.data());
+            baseChannel->plugInterface(Tp::AbstractChannelInterfacePtr::dynamicCast(messagesChannel));
+        }
     }
 
     return baseChannel;
@@ -494,7 +497,7 @@ void MatrixConnection::onConnected()
 void MatrixConnection::onSyncDone()
 {
     qDebug() << Q_FUNC_INFO;
-    const auto rooms = m_connection->roomMap();
+    const auto rooms = m_connection->rooms(Quotient::JoinState::Join); // TODO: any state
     for (Quotient::Room *room : rooms) {
         processNewRoom(room);
     }
