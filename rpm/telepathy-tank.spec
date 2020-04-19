@@ -20,7 +20,7 @@ BuildRequires: pkgconfig(TelepathyQt5Farstream) >= 0.9.7
 BuildRequires: cmake >= 3.2
 BuildRequires: libqmatrixclient-qt5-devel >= 0.4
 
-BuildRequires: opt-gcc6
+BuildRequires: opt-gcc
 
 %description
 Tank is a Qt-based matrix connection operator for the Telepathy framework.
@@ -30,8 +30,8 @@ Tank is a Qt-based matrix connection operator for the Telepathy framework.
 
 %build
 cmake . \
-    -DCMAKE_CXX_COMPILER=/opt/gcc6/bin/g++ \
-    -DCMAKE_SHARED_LINKER_FLAGS="-L/opt/gcc6/lib -static-libstdc++" \
+    -DCMAKE_CXX_COMPILER=/opt/gcc/bin/g++ \
+    -DCMAKE_SHARED_LINKER_FLAGS="-L/opt/gcc/lib -static-libstdc++" \
     -DCMAKE_INSTALL_PREFIX=%{_prefix} \
     -DCMAKE_INSTALL_LIBEXECDIR=%{_libexecdir} \
     -DCMAKE_INSTALL_DATADIR=%{_datadir}
