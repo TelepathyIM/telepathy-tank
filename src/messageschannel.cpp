@@ -181,6 +181,7 @@ void MatrixMessagesChannel::processMessageEvent(const Quotient::RoomMessageEvent
 {
     QJsonDocument doc(event->originalJsonObject());
     qDebug().noquote() << Q_FUNC_INFO << "Process message" << doc.toJson(QJsonDocument::Indented);
+    bool silent = true;
     Tp::MessagePart header;
     header[QStringLiteral("message-token")] = QDBusVariant(event->id());
     header[QStringLiteral("message-sent")] = QDBusVariant(event->timestamp().toMSecsSinceEpoch() / 1000);
@@ -192,6 +193,8 @@ void MatrixMessagesChannel::processMessageEvent(const Quotient::RoomMessageEvent
     } else {
         header[QStringLiteral("message-sender")] = QDBusVariant(m_connection->ensureContactHandle(event->senderId()));
         header[QStringLiteral("message-sender-id")] = QDBusVariant(event->senderId());
+        if (m_targetHandleType == Tp::HandleTypeContact)
+            silent = false;
     }
 
     /* Redacted deleted message */
@@ -205,6 +208,10 @@ void MatrixMessagesChannel::processMessageEvent(const Quotient::RoomMessageEvent
     const bool hasOtherReceipts = usersAtEventId.count() > selfReceipts;
     if (hasOtherReceipts) {
         header[QStringLiteral("delivery-status")] = QDBusVariant(Tp::DeliveryStatusRead);
+    }
+    
+    if (silent) {
+        header[QStringLiteral("silent")] = QDBusVariant(silent);
     }
     
     /* Text message */
