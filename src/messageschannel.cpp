@@ -89,11 +89,18 @@ MatrixMessagesChannel::MatrixMessagesChannel(MatrixConnection *connection, Quoti
                                                            /* creatorHandle */ 0,
                                                            /* creationTimestamp */ QDateTime());
         baseChannel->plugInterface(Tp::AbstractChannelInterfacePtr::dynamicCast(m_roomIface));
+        
+        m_roomConfigIface = Tp::BaseChannelRoomConfigInterface::create();
+        baseChannel->plugInterface(Tp::AbstractChannelInterfacePtr::dynamicCast(m_roomConfigIface));
+        m_roomConfigIface->setTitle(room->displayName());
+        m_roomConfigIface->setDescription(room->topic());
     }
 
     connect(m_room, &Quotient::Room::pendingEventChanged, this, &MatrixMessagesChannel::onPendingEventChanged);
     connect(m_room, &Quotient::Room::typingChanged, this, &MatrixMessagesChannel::onTypingChanged);
     connect(m_room, &Quotient::Room::readMarkerForUserMoved, this, &MatrixMessagesChannel::onReadMarkerForUserMoved);
+    connect(m_room, &Quotient::Room::displaynameChanged, this, &MatrixMessagesChannel::onDisplayNameChanged);
+    connect(m_room, &Quotient::Room::topicChanged, this, &MatrixMessagesChannel::onTopicChanged);
 }
 
 void MatrixMessagesChannel::sendDeliveryReport(Tp::DeliveryStatus tpDeliveryStatus, const QString &deliveryToken)
@@ -146,6 +153,16 @@ void MatrixMessagesChannel::onReadMarkerForUserMoved(Quotient::User *user, const
     Tp::DBusError error;
     acknowledgePendingMessages(tokens, &error);
 #endif // TP_QT_VERSION >= TP_QT_VERSION_CHECK(0, 9, 8)
+}
+
+void MatrixMessagesChannel::onDisplayNameChanged(Quotient::Room *room, const QString &oldName)
+{
+    m_roomConfigIface->setTitle(room->displayName());
+}
+
+void MatrixMessagesChannel::onTopicChanged()
+{
+    m_roomConfigIface->setDescription(m_room->topic());
 }
 
 void MatrixMessagesChannel::sendChatStateNotification(uint state)

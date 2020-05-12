@@ -75,6 +75,8 @@ private:
     void sendDeliveryReport(Tp::DeliveryStatus tpDeliveryStatus, const QString &deliveryToken);
     void onPendingEventChanged(int pendingEventIndex);
     void onReadMarkerForUserMoved(Quotient::User* user, const QString &fromEventId, const QString &toEventId);
+    void onDisplayNameChanged(Quotient::Room *room, const QString &oldName);
+    void onTopicChanged();
     void onTypingChanged();
     void reactivateLocalTyping();
     void sendChatStateNotification(uint state);
