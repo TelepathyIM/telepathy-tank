@@ -40,5 +40,6 @@ script:
  - pushd build
  - cmake ../
  - make -j4
- - make test
- - ctest --output-on-failure
+# no tests yet
+# - make test
+# - ctest --output-on-failure
