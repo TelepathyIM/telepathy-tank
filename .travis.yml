@@ -12,20 +12,11 @@ addons:
       - qtbase5-dev
       - qtmultimedia5-dev
       - libtelepathy-qt5-dev
-      - dbus-test-runner
-      - dconf-cli
-      - gnome-keyring
-      - libmission-control-plugins-dev
-      - libqt5sql5-sqlite
-      - libsqlite3-dev
       - qt5-default
-      - sqlite3
-      - telepathy-mission-control-5
-      - doxygen
 
 before_install:
   - sudo apt-get update
-  - sudo apt-get install -y qtbase5-dev libtelepathy-qt5-dev libphonenumber-dev dbus-test-runner dconf-cli gnome-keyring libmission-control-plugins-dev libqt5sql5-sqlite libsqlite3-dev qt5-default sqlite3 telepathy-mission-control-5 doxygen
+  - sudo apt-get install -y qtbase5-dev qtmultimedia5-dev libtelepathy-qt5-dev qt5-default
 
 script:
  - pushd ..
