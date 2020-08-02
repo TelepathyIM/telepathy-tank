@@ -10,6 +10,7 @@ addons:
   apt:
     packages:
       - qtbase5-dev
+      - qtmultimedia5-dev
       - libtelepathy-qt5-dev
       - dbus-test-runner
       - dconf-cli
