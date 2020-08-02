@@ -1,0 +1,43 @@
+language: cpp
+dist: bionic
+matrix:
+  include:
+    - #dist: bionic
+      compiler: gcc
+      os: linux
+      sudo: required
+addons:
+  apt:
+    packages:
+      - qtbase5-dev
+      - libtelepathy-qt5-dev
+      - dbus-test-runner
+      - dconf-cli
+      - gnome-keyring
+      - libmission-control-plugins-dev
+      - libqt5sql5-sqlite
+      - libsqlite3-dev
+      - qt5-default
+      - sqlite3
+      - telepathy-mission-control-5
+      - doxygen
+
+before_install:
+  - sudo apt-get update
+  - sudo apt-get install -y qtbase5-dev libtelepathy-qt5-dev libphonenumber-dev dbus-test-runner dconf-cli gnome-keyring libmission-control-plugins-dev libqt5sql5-sqlite libsqlite3-dev qt5-default sqlite3 telepathy-mission-control-5 doxygen
+
+script:
+ - pushd ..
+ - git clone https://github.com/quotient-im/libQuotient.git -b 0.6.0
+ - mkdir libQuotient_build
+ - cd libQuotient_build
+ - cmake ../libQuotient
+ - make -j4
+ - sudo make install
+ - popd
+ - mkdir build
+ - pushd build
+ - cmake ../
+ - make -j4
+ - make test
+ - ctest --output-on-failure
