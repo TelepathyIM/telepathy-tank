@@ -1,0 +1,36 @@
+language: cpp
+dist: bionic
+matrix:
+  include:
+    - #dist: bionic
+      compiler: gcc
+      os: linux
+      sudo: required
+addons:
+  apt:
+    packages:
+      - qtbase5-dev
+      - qtmultimedia5-dev
+      - libtelepathy-qt5-dev
+      - qt5-default
+
+before_install:
+  - sudo apt-get update
+  - sudo apt-get install -y qtbase5-dev qtmultimedia5-dev libtelepathy-qt5-dev qt5-default
+
+script:
+ - pushd ..
+ - git clone https://github.com/quotient-im/libQuotient.git -b 0.6.0
+ - mkdir libQuotient_build
+ - cd libQuotient_build
+ - cmake ../libQuotient
+ - make -j4
+ - sudo make install
+ - popd
+ - mkdir build
+ - pushd build
+ - cmake ../
+ - make -j4
+# no tests yet
+# - make test
+# - ctest --output-on-failure

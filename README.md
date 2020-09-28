@@ -1,5 +1,7 @@
 # Telepathy-Tank
 
+[![Build Status](https://travis-ci.com/TelepathyIM/telepathy-tank.svg?branch=master)](https://travis-ci.com/TelepathyIM/telepathy-tank)
+
 Tank is a Qt-based matrix connection operator for the Telepathy framework.
 
 ## Features
